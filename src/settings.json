@@ -169,6 +169,13 @@
       "name": "AI Tools",
       "items": [
         {
+          "name": "Chat AI",
+          "desc": "Chat dengan AI",
+          "path": "/ai/chatai?prompt=",
+          "status": "ready",
+          "requireKey": false
+        },
+          {
           "name": "Ai Puisi",
           "desc": "Generate puisi pendekmu",
           "path": "/ai/ai-puisi?text=",
