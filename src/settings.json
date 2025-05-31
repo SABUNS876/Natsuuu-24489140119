@@ -232,9 +232,9 @@
       "name": "Tools",
       "items": [
         {
-          "name": "Upscale Image",
-          "desc": "HD kan fotomu",
-          "path": "/tools/upscale?url=",
+          "name": "Remini Images",
+          "desc": "Ubah Foto Mu Menjadi Menarik",
+          "path": "/tools/remini?url=",
           "status": "ready",
           "requireKey": false
         },
