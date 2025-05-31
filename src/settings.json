@@ -37,6 +37,13 @@
       "name": "Search",
       "items": [
         {
+          "name": "Search Pinterest",
+          "desc": "Temukan foto di berdasarkan kriteria tertentu",
+          "path": "/search/savepin?q=",
+          "status": "ready",
+          "requireKey": false
+        },
+          {
           "name": "Film Finder AI",
           "desc": "Temukan film berdasarkan kriteria tertentu",
           "path": "/search/filmfinder?q=",
