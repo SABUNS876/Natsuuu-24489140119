@@ -169,23 +169,6 @@
       "name": "AI Tools",
       "items": [
         {
-          "name": "Chat AI",
-          "desc": "Chat dengan AI",
-          "path": "/ai/chatai?prompt=",
-          "status": "ready",
-          "requireKey": false
-        },
-          {
-          "name": "Ai Puisi",
-          "desc": "Generate puisi pendekmu",
-          "path": "/ai/ai-puisi?text=",
-          "status": "maintenance",
-          "requireKey": false,
-          "params": {
-            "text": "Teks puisi mu."
-          }
-        },
-        {
           "name": "LuminAI",
           "desc": "Chat dengan LuminAI",
           "path": "/ai/ai-lumin?text=",
@@ -193,16 +176,6 @@
           "requireKey": false,
           "params": {
             "text": "Chat Dengan LuminAI"
-          }
-        },
-        {
-          "name": "Arting Ai",
-          "desc": "Buat gambar mu dari arting",
-          "path": "/ai/ai-arting?prompt=",
-          "status": "maintenance",
-          "requireKey": false,
-          "params": {
-            "prompt": "Prompt untuk Buat gambar."
           }
         }
       ]
