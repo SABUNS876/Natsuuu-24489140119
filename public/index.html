@@ -930,7 +930,7 @@ document.addEventListener('DOMContentLoaded', async () => {
 
     try {
         // Load settings
-        const settings = await fetch("/settings.json").then(res => res.json());
+        const settings = await fetch("/src/settings.json").then(res => res.json());
         
 
         // Set page content from settings
