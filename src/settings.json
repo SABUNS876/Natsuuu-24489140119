@@ -111,7 +111,7 @@
         {
           "name": "Tiktok Downloader",
           "desc": "Download Tiktok",
-          "path": "/downloader/tiktokdl?url=",
+          "path": "/downloader/tiktok?url=",
           "status": "maintenance",
           "requireKey": false,
           "params": {
