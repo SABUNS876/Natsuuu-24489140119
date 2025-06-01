@@ -226,17 +226,6 @@
           }
         }
       ]
-    },
-    {
-      "name": "Status Api",
-      "items": [
-        {
-          "name": "Cek Status Api",
-          "desc": "Cek Response Dari Api",
-          "path": "/api/status",
-          "status": "ready"
-          "requireKey": false
-          }
-        }
-      ]
     }
+  ]
+}
