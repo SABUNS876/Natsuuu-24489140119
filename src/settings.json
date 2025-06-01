@@ -161,6 +161,13 @@
         {
           "name": "LuminAI",
           "desc": "Chat dengan LuminAI",
+          "path": "/ai/ghibli-ai?url=&prompt=",
+          "status": "ready",
+          "requireKey": false
+        },
+        {
+          "name": "LuminAI",
+          "desc": "Chat dengan LuminAI",
           "path": "/ai/ai-lumin?text=",
           "status": "ready",
           "requireKey": false,
