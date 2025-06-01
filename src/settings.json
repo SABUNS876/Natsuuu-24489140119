@@ -169,13 +169,6 @@
       "name": "AI Tools",
       "items": [
         {
-          "name": "Text To Image",
-          "desc": "Ubah Prompt Anda Ke Image",
-          "path": "/ai/texttoimg?prompt=",
-          "status": "ready",
-          "requireKey": false
-        },
-        {
           "name": "LuminAI",
           "desc": "Chat dengan LuminAI",
           "path": "/ai/ai-lumin?text=",
