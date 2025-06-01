@@ -37,6 +37,13 @@
       "name": "Search",
       "items": [
         {
+          "name": "Search Anime",
+          "desc": "Temukan Anime Yang Kamu Suka",
+          "path": "/search/anime?q=",
+          "status": "ready",
+          "requireKey": false
+        },
+          {
           "name": "Search Pinterest",
           "desc": "Temukan foto di berdasarkan kriteria tertentu",
           "path": "/search/savepin?q=",
