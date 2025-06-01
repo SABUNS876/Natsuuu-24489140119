@@ -169,13 +169,6 @@
       "name": "AI Tools",
       "items": [
         {
-          "name": "BlackboxAI",
-          "desc": "Chat Dengan BlackboxAI",
-          "path": "/ai/ai-blackbox?q=",
-          "status": "ready",
-          "requireKey": false
-        },
-        {
           "name": "LuminAI",
           "desc": "Chat dengan LuminAI",
           "path": "/ai/ai-lumin?text=",
