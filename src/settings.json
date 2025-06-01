@@ -184,6 +184,13 @@
       "name": "Random",
       "items": [
         {
+          "name": "Random Neko Nsfw Foto",
+          "desc": "Get Random Nsfw Neko",
+          "path": "/random/hneko",
+          "status": "ready",
+          "requireKey": false
+        },
+        {
           "name": "Hentai Video",
           "desc": "Get Random Hentai Video",
           "path": "/random/hentai",
