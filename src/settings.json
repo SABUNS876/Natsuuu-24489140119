@@ -7,7 +7,7 @@
   },
   "apiSettings": {
     "creator": "Natsu - Api",
-    "globalKey": ["NatsuGanteng"],
+    "apikey": ["NatsuGanteng"],
     "defaultRequireKey": true
   },
   "links": [
