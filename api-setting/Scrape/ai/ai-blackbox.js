@@ -5,7 +5,7 @@ async function blackboxChat(text) {
   const userId = `user-${crypto.randomBytes(4).toString('hex')}`;
   const sessionId = crypto.randomBytes(8).toString('hex');
   
-  const url = 'https://www.blackbox.ai';
+  const url = 'https://www.blackbox.ai/api/chat';
   const headers = {
     'Accept': '*/*',
     'Accept-Language': 'en-US,en;q=0.9',
