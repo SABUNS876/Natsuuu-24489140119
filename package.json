@@ -22,6 +22,7 @@
     "openai": "^4.96.2",
     "parse-ms": "^2.1.0",
     "path": "^0.12.7",
+    "cloudku-uploader": "^2.2.5",
     "jimp": "^0.16.13",
     "performance-now": "^2.1.0",
     "pino": "^8.14.1",
