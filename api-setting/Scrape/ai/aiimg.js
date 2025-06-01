@@ -1,5 +1,5 @@
-const axios = require('axios')
- 
+const axios = require('axios');
+
 async function artingAI(prompt) {
   const payload = {
     prompt,
@@ -15,38 +15,55 @@ async function artingAI(prompt) {
     steps: 25,
     guidance: 7,
     clip_skip: 2
-  }
- 
-  const { data: createRes } = await axios.post('https://api.arting.ai/api/cg/text-to-image/create', payload, {
-    headers: { 'Content-Type': 'application/json' }
-  })
- 
-  const requestId = createRes?.data?.request_id
-  if (!requestId) throw new Error('Request ID tidak ditemukan')
- 
-  let retries = 0
-  let result = null
- 
-  while (retries < 10) {
-    const { data: getRes } = await axios.post('https://api.arting.ai/api/cg/text-to-image/get', {
-      request_id: requestId
-    }, {
-      headers: { 'Content-Type': 'application/json' }
-    })
- 
-    const output = getRes?.data?.output
-    if (output && output.length) {
-      result = output[0]
-      break
+  };
+
+  try {
+    // 1. Request pembuatan gambar
+    const { data: createRes } = await axios.post(
+      'https://api.arting.ai/api/cg/text-to-image/create',
+      payload,
+      { headers: { 'Content-Type': 'application/json' } }
+    );
+
+    const requestId = createRes?.data?.request_id;
+    if (!requestId) throw new Error('Request ID tidak ditemukan');
+
+    // 2. Polling hasil gambar
+    let retries = 0;
+    let resultUrl = null;
+
+    while (retries < 10 && !resultUrl) {
+      await new Promise(res => setTimeout(res, 2000));
+
+      const { data: getRes } = await axios.post(
+        'https://api.arting.ai/api/cg/text-to-image/get',
+        { request_id: requestId },
+        { headers: { 'Content-Type': 'application/json' } }
+      );
+
+      const output = getRes?.data?.output;
+      if (output && output.length) {
+        resultUrl = output[0]; // Asumsi output adalah URL gambar
+        break;
+      }
+
+      retries++;
     }
- 
-    await new Promise(res => setTimeout(res, 2000))
-    retries++
+
+    if (!resultUrl) throw new Error('Gagal mendapatkan URL gambar');
+
+    // 3. Kembalikan respons dalam format yang diharapkan scraper
+    return {
+      image_url: resultUrl,
+      prompt: prompt,
+      note: 'Gambar tersedia di URL di atas'
+    };
+
+  } catch (error) {
+    console.error('Error in artingAI:', error);
+    throw new Error(`Gagal memproses gambar: ${error.message}`);
   }
- 
-  if (!result) throw new Error('Gagal mendapatkan hasil gambar')
- 
-  return result
 }
- 
+
+// Ekspor sebagai fungsi langsung (untuk kompatibilitas dengan sistem scraper Anda)
 module.exports = artingAI;
