@@ -159,8 +159,8 @@
       "name": "AI Tools",
       "items": [
         {
-          "name": "LuminAI",
-          "desc": "Chat dengan LuminAI",
+          "name": "GhibliAI",
+          "desc": "Chat dengan GhibliAI",
           "path": "/ai/ghibli-ai?url=&prompt=",
           "status": "ready",
           "requireKey": false
