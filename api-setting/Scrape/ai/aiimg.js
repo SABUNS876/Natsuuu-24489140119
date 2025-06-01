@@ -49,4 +49,4 @@ async function artingAI(prompt) {
   return result
 }
  
-module.exports = { artingAI }
+module.exports = artingAI;
