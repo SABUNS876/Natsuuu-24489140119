@@ -11,10 +11,8 @@ async function getWaifu() {
       responseType: 'arraybuffer'
     });
     
-    return {
-      buffer: Buffer.from(imageResponse.data, 'binary'),
-      url: imageUrl
-    };
+    // Kembalikan buffer saja (tanpa objek)
+    return Buffer.from(imageResponse.data, 'binary');
   } catch (error) {
     console.error('Gagal mengambil gambar:', error);
     throw error;
