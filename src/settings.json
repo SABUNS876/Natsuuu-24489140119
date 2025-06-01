@@ -159,6 +159,13 @@
       "name": "AI Tools",
       "items": [
         {
+          "name": "ChatGPT - AI",
+          "desc": "Chat Dengan GPT",
+          "path": "/ai/chatgpt?prompt=",
+          "status": "ready",
+          "requireKey": false
+        },
+        {
           "name": "AI-Images",
           "desc": "Buat Prompt Mu Menjadi Gambar",
           "path": "/ai/aiimg?prompt=",
