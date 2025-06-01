@@ -171,7 +171,7 @@
         {
           "name": "ClipArtAI",
           "desc": "Buat Prompt Mu Menjadi Art",
-          "path": "/ai/clip-art?prompt=",
+          "path": "/ai/clip-art?prompt=&style=&width=&height=&model=",
           "status": "ready",
           "requireKey": false
         },
