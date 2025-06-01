@@ -159,13 +159,6 @@
       "name": "AI Tools",
       "items": [
         {
-          "name": "GhibliAI",
-          "desc": "Ubah Gambar Kamu Menjadi Ghibli",
-          "path": "/ai/ghibli-ai?url=&prompt=",
-          "status": "ready",
-          "requireKey": false
-        },
-        {
           "name": "LuminAI",
           "desc": "Chat dengan LuminAI",
           "path": "/ai/ai-lumin?text=",
