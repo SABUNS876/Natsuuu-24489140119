@@ -169,9 +169,9 @@
       "name": "AI Tools",
       "items": [
         {
-          "name": "ClipArtAI",
-          "desc": "Buat Prompt Mu Menjadi Art",
-          "path": "/ai/clip-art?prompt=&style=&width=&height=&model=",
+          "name": "BlackboxAI",
+          "desc": "Chat Dengan BlackboxAI",
+          "path": "/ai/ai-blackbox?q=",
           "status": "ready",
           "requireKey": false
         },
