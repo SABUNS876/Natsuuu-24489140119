@@ -37,6 +37,13 @@
       "name": "Search",
       "items": [
         {
+          "name": "Search Komik",
+          "desc": "Search Komik Yang Kamu Suka",
+          "path": "/search/komiku?text=",
+          "status": "ready",
+          "requireKey": false
+        },
+        {
           "name": "Search Pinterest",
           "desc": "Temukan foto di berdasarkan kriteria tertentu",
           "path": "/search/savepin?q=",
