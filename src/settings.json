@@ -169,6 +169,13 @@
       "name": "AI Tools",
       "items": [
         {
+          "name": "ClipArtAI",
+          "desc": "Buat Prompt Mu Menjadi Art",
+          "path": "/ai/clip-art?prompt=",
+          "status": "ready",
+          "requireKey": false
+        },
+        {
           "name": "LuminAI",
           "desc": "Chat dengan LuminAI",
           "path": "/ai/ai-lumin?text=",
