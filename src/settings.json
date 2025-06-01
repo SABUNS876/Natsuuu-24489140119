@@ -203,6 +203,13 @@
       "name": "Uploader",
       "items": [
         {
+          "name": "Upload to cloudku",
+          "desc": "Upload Apa Saja Ke Cloudku",
+          "path": "/uploader/cloudku-uploader?url=",
+          "status": "ready",
+          "requireKey": false
+        },
+        {
           "name": "Upload teks to catbox",
           "desc": "TYPE : ['js', 'ts', 'py', 'cpp', 'c', 'java', 'html', 'css', 'json', 'xml', 'php', 'rb', 'go', 'rs', 'sh', 'bat', 'kt']",
           "path": "/uploader/uptekstocatbox?teks=&type=",
