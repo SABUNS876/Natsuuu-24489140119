@@ -2,39 +2,38 @@ const axios = require("axios");
 const cheerio = require("cheerio");
 const FormData = require("form-data");
 
-const gptOnline = {
-  getNonceAndAny: async () => {
+// Versi fungsi langsung
+async function gptOnlineHandler(prompt) {
+  const getNonceAndAny = async () => {
     const { data } = await axios.get("https://gptonline.ai/id/chatgpt-online/");
     const $ = cheerio.load(data);
-
     const div = $('.wpaicg-chat-shortcode');
+    return {
+      nonce: div.attr('data-nonce'),
+      botId: div.attr('data-bot-id'),
+      postId: div.attr('data-post-id')
+    };
+  };
 
-    const nonce = div.attr('data-nonce');
-    const botId = div.attr('data-bot-id');
-    const postId = div.attr('data-post-id');
+  const { nonce, botId, postId } = await getNonceAndAny();
+  const form = new FormData();
+  form.append("_wpnonce", nonce);
+  form.append("post_id", postId);
+  form.append("url", "https://gptonline.ai/id/chatgpt-online/");
+  form.append("action", "wpaicg_chat_shortcode_message");
+  form.append("message", prompt);
+  form.append("bot_id", botId);
+  form.append("chat_bot_identity", "custom_bot_1040");
+  form.append("wpaicg_chat_history", "[]");
+  form.append("wpaicg_chat_client_id", "LCgGOMeIOC");
 
-    return { nonce, botId, postId };
-  },
-  chat: async (prompt) => {
-    let { nonce, botId, postId } = await gptOnline.getNonceAndAny()
-    let $ = new FormData()
-    $.append("_wpnonce", nonce)
-    $.append("post_id", postId)
-    $.append("url", "https://gptonline.ai/id/chatgpt-online/")
-    $.append("action", "wpaicg_chat_shortcode_message")
-    $.append("message", prompt)
-    $.append("bot_id", botId)
-    $.append("chat_bot_identity", "custom_bot_1040")
-    $.append("wpaicg_chat_history", "[]")
-    $.append("wpaicg_chat_client_id", "LCgGOMeIOC")
-    const headersList = {
-      headers: {
-        ...$.getHeaders()
-      }
-    }
-    let { data } = await axios.post("https://gptonline.ai/id/wp-admin/admin-ajax.php", $, headersList)
-    return data
-  }
-};
+  const { data } = await axios.post(
+    "https://gptonline.ai/id/wp-admin/admin-ajax.php",
+    form,
+    { headers: form.getHeaders() }
+  );
 
-module.exports = gptOnline;
+  return data;
+}
+
+module.exports = gptOnlineHandler; // Ekspor fungsi langsung
