@@ -109,16 +109,6 @@
           }
         },
         {
-          "name": "Tiktok Downloader",
-          "desc": "Download Tiktok",
-          "path": "/downloader/tiktok?url=",
-          "status": "maintenance",
-          "requireKey": false,
-          "params": {
-            "url": "url dari tiktok"
-          }
-        },
-        {
           "name": "Youtube Video Downloader",
           "desc": "Download Video Youtube",
           "path": "/downloader/ytv?url=",
