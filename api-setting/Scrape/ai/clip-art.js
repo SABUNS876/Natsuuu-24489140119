@@ -4,10 +4,9 @@
  * Jangan lupa sholat
  * Base: https://vheer.com
  * Eror chat saja ma
- * pastikan sudah menginstall cloudku-uploader dan puppeteer
+ * pastikan sudah menginstall puppeteer
  */
 const puppeteer = require('puppeteer');
-const uploadFile = require('cloudku-uploader');
 
 async function generateClipArt(promptText, styleType, width, height, modelType) {
     let browser;
@@ -125,29 +124,33 @@ async function generateClipArt(promptText, styleType, width, height, modelType) 
         const imageUrl = await page.$eval(generatedImageSelector, img => img.src);
         const defaultImageUrl = '/_next/image?url=%2Fimages%2Fpages%2Fclip_art_generator%2Fdefault_image.webp&w=1080&q=75';
 
-        if (imageUrl && !imageUrl.includes(defaultImageUrl) && imageUrl.startsWith('blob:')) {
-            const imageBase64 = await page.evaluate(async (url) => {
-                try {
-                    const response = await fetch(url);
-                    const blob = await response.blob();
-                    return new Promise((resolve, reject) => {
-                        const reader = new FileReader();
-                        reader.onloadend = () => {
-                            const base64data = reader.result.split(',')[1];
-                            resolve(base64data);
-                        };
-                        reader.onerror = reject;
-                        reader.readAsDataURL(blob);
-                    });
-                } catch (error) {
-                    return null;
-                }
-            }, imageUrl);
+        if (imageUrl && !imageUrl.includes(defaultImageUrl) {
+            if (imageUrl.startsWith('blob:')) {
+                // For blob URLs
+                const imageBase64 = await page.evaluate(async (url) => {
+                    try {
+                        const response = await fetch(url);
+                        const blob = await response.blob();
+                        return new Promise((resolve, reject) => {
+                            const reader = new FileReader();
+                            reader.onloadend = () => resolve(reader.result);
+                            reader.onerror = reject;
+                            reader.readAsDataURL(blob);
+                        });
+                    } catch (error) {
+                        return null;
+                    }
+                }, imageUrl);
 
-            if (imageBase64) {
-                const buffer = Buffer.from(imageBase64, 'base64');
-                const result = await uploadFile(buffer);
-                return result;
+                if (imageBase64) {
+                    // Convert base64 to buffer
+                    const base64Data = imageBase64.replace(/^data:image\/(png|jpeg|jpg|webp);base64,/, '');
+                    return Buffer.from(base64Data, 'base64');
+                }
+            } else if (imageUrl.startsWith('http')) {
+                // For direct URLs
+                const response = await page.goto(imageUrl);
+                return await response.buffer();
             }
         }
         return null;
@@ -163,14 +166,21 @@ async function generateClipArt(promptText, styleType, width, height, modelType) 
 
 // Example usage
 async function test() {
-    const result = await generateClipArt(
+    const buffer = await generateClipArt(
         "a cute cat playing with a ball of yarn, cartoon style",
         3, // Cartoon style
         1024, // Width
         1024, // Height
         1 // Quality model
     );
-    console.log(result);
+    
+    if (buffer) {
+        console.log('Successfully got image buffer of length:', buffer.length);
+        // You can save the buffer to a file or use it as needed
+        // Example: fs.writeFileSync('output.png', buffer);
+    } else {
+        console.log('Failed to generate image');
+    }
 }
 
 // Uncomment to test
