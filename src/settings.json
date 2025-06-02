@@ -37,6 +37,13 @@
       "name": "Search",
       "items": [
         {
+          "name": "Search SoundCloud",
+          "desc": "Temukan Lagu Dari SoundCloud Yang Kamu Suka",
+          "path": "/search/soundcloud?q=",
+          "status": "ready",
+          "requireKey": false
+        },
+          {
           "name": "Search Anime",
           "desc": "Temukan Anime Yang Kamu Suka",
           "path": "/search/anime?q=",
