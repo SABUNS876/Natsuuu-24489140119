@@ -166,13 +166,6 @@
       "name": "AI Tools",
       "items": [
         {
-          "name": "Blackbox - AI",
-          "desc": "Chat Dengan Blackbox - AI",
-          "path": "/ai/blackbox?text=",
-          "status": "ready",
-          "requireKey": false
-        },
-        {
           "name": "ChatGPT - AI",
           "desc": "Chat Dengan GPT",
           "path": "/ai/chatgpt?prompt=",
