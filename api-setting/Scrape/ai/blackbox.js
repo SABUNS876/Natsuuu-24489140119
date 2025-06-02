@@ -1,137 +1,143 @@
+/**
+ * Wm: Nopal ganteng
+ * hapus wm boleh tapi doakan kesahatan yang bikin
+ * Jangan lupa sholat
+ * Base:https://www.blackbox.ai
+ * Eror chat saja ma 
+ */
 const axios = require("axios");
 const crypto = require("crypto");
 
-/**
- * BLACKBOX AI SCRAPER
- * Fitur Utama:
- * - Auto generate random cookies dan headers
- * - Rate limiting otomatis
- * - Error handling komprehensif
- * - Support berbagai parameter request
- * - Anti-ban system
- */
+const url = 'https://www.blackbox.ai'; 
 
-// ====================== KONFIGURASI UTAMA ======================
-const BASE_URL = 'https://www.blackbox.ai/api/chat';
-const DEFAULT_TIMEOUT = 30000; // 30 detik
-const RATE_LIMIT_DELAY = 2000; // 2 detik antara request
+function randomizeCookie(originalCookie) {
+    const parts = originalCookie.split('; ');
+    const newCookieParts = [];
 
-// ====================== UTILITY FUNCTIONS ======================
-function generateRandomId(length = 16) {
-    return crypto.randomBytes(length).toString('hex');
-}
+    for (const part of parts) {
+        const [key, ...valueParts] = part.split('=');
+        let value = valueParts.join('=');
 
-function generateUserAgent() {
-    const versions = [
-        `Chrome/${100 + Math.floor(Math.random() * 50)}.0.0.0`,
-        `Firefox/${100 + Math.floor(Math.random() * 30)}.0`,
-        `Safari/${537 + Math.floor(Math.random() * 50)}.36`
-    ];
-    const platforms = [
-        'Windows NT 10.0; Win64; x64',
-        'Macintosh; Intel Mac OS X 10_15_7',
-        'X11; Linux x86_64'
-    ];
-    return `Mozilla/5.0 (${platforms[Math.floor(Math.random() * platforms.length)]}) AppleWebKit/537.36 (KHTML, like Gecko) ${versions[Math.floor(Math.random() * versions.length)]}`;
-}
-
-function generateDynamicCookies() {
-    const cookies = {
-        sessionId: crypto.randomUUID(),
-        render_app_version_affinity: `dep-${generateRandomId(8)}`,
-        _gcl_au: `1.1.${Math.floor(Math.random() * 1e9)}.${Math.floor(Date.now()/1000)}`,
-        __Host_authjs_csrf_token: `${generateRandomId(32)}%7C${generateRandomId(32)}`,
-        [`intercom-id-${generateRandomId(4)}`]: crypto.randomUUID(),
-        [`intercom-device-id-${generateRandomId(4)}`]: crypto.randomUUID()
-    };
-    return Object.entries(cookies).map(([k, v]) => `${k}=${v}`).join('; ');
-}
-
-// ====================== CORE FUNCTION ======================
-let lastRequestTime = 0;
-
-async function blackbox(query, options = {}) {
-    // Validasi input
-    if (!query || typeof query !== 'string') {
-        throw new Error('Query harus berupa string yang valid');
+        if (key === 'sessionId') {
+            value = crypto.randomUUID();
+        } else if (key === '__Host-authjs.csrf-token') {
+            const csrfPart1 = crypto.randomBytes(32).toString('hex');
+            const csrfPart2 = crypto.randomBytes(32).toString('hex');
+            value = `${csrfPart1}%7C${csrfPart2}`;
+        } else if (key === 'intercom-id-x55eda6t') {
+            value = crypto.randomUUID();
+        } else if (key === 'intercom-device-id-x55eda6t') {
+            value = crypto.randomUUID();
+        }
+        
+        newCookieParts.push(`${key}=${value}`);
     }
+    return newCookieParts.join('; ');
+}
 
+const initialCookieString = 'sessionId=429c3532-6a45-4dbc-83cb-2e906dbb87a7; render_app_version_affinity=dep-d0ufa5re5dus7396pq70; _gcl_au=1.1.842405073.1748857311; __Host-authjs.csrf-token=9970d6bf2f1aa6593be43c0413219592c454c12ae442844d482f0832d0082fd0%7C3d26219a2bdfc2d3d33535b7cedef80c79198aabb8dc03b866cd36c6d3339207; __Secure-authjs.callback-url=https%3A%2F%2Fwww.blackbox.ai; intercom-id-x55eda6t=cd93b365-ae6e-4e0b-a8fc-a95837187320; intercom-session-x55eda6t=; intercom-device-id-x55eda6t=e3dd8356-d39f-45b2-b0ef-ae85de5e87a8';
+
+// Rate limiting implementation
+let lastRequestTime = 0;
+const requestDelay = 2000; // 2 seconds between requests
+
+async function blackbox(text) {
     // Rate limiting
     const now = Date.now();
     const timeSinceLastRequest = now - lastRequestTime;
-    if (timeSinceLastRequest < RATE_LIMIT_DELAY) {
-        await new Promise(resolve => setTimeout(resolve, RATE_LIMIT_DELAY - timeSinceLastRequest));
+    if (timeSinceLastRequest < requestDelay) {
+        await new Promise(resolve => setTimeout(resolve, requestDelay - timeSinceLastRequest));
     }
     lastRequestTime = Date.now();
 
-    // Konfigurasi request
-    const requestConfig = {
-        method: 'POST',
-        url: BASE_URL,
-        headers: {
-            'Content-Type': 'application/json',
-            'Accept': '*/*',
-            'Accept-Language': 'en-US,en;q=0.9,id;q=0.8',
-            'Cookie': generateDynamicCookies(),
-            'Origin': 'https://www.blackbox.ai',
-            'Referer': 'https://www.blackbox.ai/',
-            'User-Agent': generateUserAgent(),
-            'Sec-Fetch-Dest': 'empty',
-            'Sec-Fetch-Mode': 'cors',
-            'Sec-Fetch-Site': 'same-origin'
+    const headers = {
+        'Content-Type': 'application/json',
+        'Accept': '*/*',
+        'Accept-Language': 'en-US,en;q=0.9,id;q=0.8',
+        'Cookie': randomizeCookie(initialCookieString),
+        'Origin': 'https://www.blackbox.ai', 
+        'Referer': 'https://www.blackbox.ai/', 
+        'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/' + 
+                     (100 + Math.floor(Math.random() * 50)) + '.0.0.0 Safari/537.36',
+        'Sec-Fetch-Dest': 'empty',
+        'Sec-Fetch-Mode': 'cors',
+        'Sec-Fetch-Site': 'same-origin'
+    };
+
+    const requestData = {
+        "messages": [{
+            "id": crypto.randomBytes(8).toString('hex'),
+            "content": text,
+            "role": "user"
+        }],
+        "id": crypto.randomBytes(8).toString('hex'),
+        "previewToken": null,
+        "userId": crypto.randomBytes(8).toString('hex'),
+        "codeModelMode": true,
+        "trendingAgentMode": {},
+        "isMicMode": false,
+        "userSystemPrompt": null,
+        "maxTokens": 2048, // Increased from 1024
+        "playgroundTopP": null,
+        "playgroundTemperature": null,
+        "isChromeExt": false,
+        "githubToken": "",
+        "clickedAnswer2": false,
+        "clickedAnswer3": false,
+        "clickedForceWebSearch": false,
+        "visitFromDelta": false,
+        "isMemoryEnabled": false,
+        "mobileClient": false,
+        "userSelectedModel": null,
+        "validated": crypto.randomBytes(16).toString('hex'),
+        "imageGenerationMode": false,
+        "webSearchModePrompt": false,
+        "deepSearchMode": false,
+        "domains": null,
+        "vscodeClient": false,
+        "codeInterpreterMode": false,
+        "customProfile": {
+            "name": "",
+            "occupation": "",
+            "traits": [],
+            "additionalInfo": "",
+            "enableNewChats": false
         },
-        timeout: DEFAULT_TIMEOUT,
-        data: {
-            messages: [{
-                id: generateRandomId(),
-                content: query,
-                role: "user"
-            }],
-            id: generateRandomId(),
-            previewToken: null,
-            userId: generateRandomId(),
-            codeModelMode: options.codeMode !== false,
-            maxTokens: Math.min(Math.max(options.maxTokens || 2048, 1024), 4096),
-            webSearchModePrompt: !!options.webSearch,
-            webSearchModeOption: {
-                autoMode: true,
-                webMode: !!options.webSearch,
-                offlineMode: false
-            },
-            isPremium: false,
-            beastMode: !!options.beastMode,
-            validated: generateRandomId(32),
-            // Parameter tambahan
-            ...(options.extraParams || {})
-        }
+        "webSearchModeOption": {
+            "autoMode": true,
+            "webMode": false,
+            "offlineMode": false
+        },
+        "session": null,
+        "isPremium": false,
+        "subscriptionCache": null,
+        "beastMode": false,
+        "reasoningMode": false,
+        "designerMode": false,
+        "workspaceId": "",
+        "asyncMode": false,
+        "isTaskPersistent": false
     };
 
     try {
-        const response = await axios(requestConfig);
-        return {
-            success: true,
-            data: response.data,
-            metadata: {
-                requestId: requestConfig.data.id,
-                timestamp: new Date().toISOString()
-            }
-        };
+        console.log(`Sending request to Blackbox AI`);
+        const response = await axios.post(url, requestData, { 
+            headers,
+            timeout: 30000 // 30 seconds timeout
+        });
+        return response.data;
     } catch (error) {
-        const errorInfo = {
-            message: error.message,
-            code: error.code,
-            status: error.response?.status,
-            responseData: error.response?.data,
-            config: {
-                url: error.config?.url,
-                method: error.config?.method
-            }
-        };
-        
-        console.error('Blackbox API Error:', errorInfo);
-        throw new Error(`Gagal memproses request: ${error.message}`);
+        console.error("Error occurred:");
+        if (error.response) {
+            console.error("Status:", error.response.status);
+            console.error("Response Data:", error.response.data);
+        } else if (error.request) {
+            console.error("No response received:", error.request);
+        } else {
+            console.error("Request setup error:", error.message);
+        }
+        throw new Error(`Blackbox AI request failed: ${error.message}`);
     }
 }
 
-// ====================== EXPORT ======================
 module.exports = blackbox;
