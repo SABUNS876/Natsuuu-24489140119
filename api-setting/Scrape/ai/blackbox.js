@@ -1,57 +1,74 @@
+/**
+ * Wm: Nopal ganteng
+ * hapus wm boleh tapi doakan kesahatan yang bikin
+ * Jangan lupa sholat
+ * Base:https://www.blackbox.ai
+ * Eror chat saja ma 
+ */
 const axios = require("axios");
 const crypto = require("crypto");
 
-const url = 'https://www.blackbox.ai/api/chat';
-const defaultHeaders = {
+const url = 'https://www.blackbox.ai/api/chat'; 
+
+function randomizeCookie(originalCookie) {
+    const parts = originalCookie.split('; ');
+    const newCookieParts = [];
+
+    for (const part of parts) {
+        const [key, ...valueParts] = part.split('=');
+        let value = valueParts.join('=');
+
+        if (key === 'sessionId') {
+            value = crypto.randomUUID();
+        } else if (key === '__Host-authjs.csrf-token') {
+            const csrfPart1 = crypto.randomBytes(32).toString('hex');
+            const csrfPart2 = crypto.randomBytes(32).toString('hex');
+            value = `${csrfPart1}%7C${csrfPart2}`;
+        } else if (key === 'intercom-id-x55eda6t') {
+            value = crypto.randomUUID();
+        } else if (key === 'intercom-device-id-x55eda6t') {
+            value = crypto.randomUUID();
+        }
+        
+        newCookieParts.push(`${key}=${value}`);
+    }
+    const randomizedCookieString = newCookieParts.join('; ');
+    return randomizedCookieString;
+}
+
+const initialCookieString = 'sessionId=429c3532-6a45-4dbc-83cb-2e906dbb87a7; render_app_version_affinity=dep-d0ufa5re5dus7396pq70; _gcl_au=1.1.842405073.1748857311; __Host-authjs.csrf-token=9970d6bf2f1aa6593be43c0413219592c454c12ae442844d482f0832d0082fd0%7C3d26219a2bdfc2d3d33535b7cedef80c79198aabb8dc03b866cd36c6d3339207; __Secure-authjs.callback-url=https%3A%2F%2Fwww.blackbox.ai; intercom-id-x55eda6t=cd93b365-ae6e-4e0b-a8fc-a95837187320; intercom-session-x55eda6t=; intercom-device-id-x55eda6t=e3dd8356-d39f-45b2-b0ef-ae85de5e87a8';
+
+const headers = {
     'Content-Type': 'application/json',
     'Accept': '*/*',
     'Accept-Language': 'en-US,en;q=0.9,id;q=0.8',
-    'Origin': 'https://www.blackbox.ai',
-    'Referer': 'https://www.blackbox.ai/',
-    'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/' + Math.floor(Math.random() * 50) + '.0.0.0 Safari/537.36',
+    'Cookie': randomizeCookie(initialCookieString),
+    'Origin': 'https://www.blackbox.ai', 
+    'Referer': 'https://www.blackbox.ai/', 
+    'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/' + 
+                  Math.floor(Math.random() * 50 + 100) + '.0.0.0 Safari/537.36',
     'Sec-Fetch-Dest': 'empty',
     'Sec-Fetch-Mode': 'cors',
     'Sec-Fetch-Site': 'same-origin'
 };
 
-function generateRandomId() {
-    return crypto.randomBytes(16).toString('hex');
-}
-
-function getDynamicHeaders() {
-    return {
-        ...defaultHeaders,
-        'Cookie': `sessionId=${generateRandomId()}; render_app_version_affinity=dep-${generateRandomId().substring(0, 16)}`,
-        'User-Agent': `Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/${Math.floor(100 + Math.random() * 50)}.0.0.0 Safari/537.36`
-    };
-}
-
 async function blackbox(text, options = {}) {
-    const {
-        userId = generateRandomId(),
-        maxTokens = 2048,
-        codeModelMode = false,
-        webSearchMode = true,
-        isPremium = false,
-        beastMode = true
-    } = options;
-
     const requestData = {
         "messages": [
             {
-                "id": generateRandomId(),
+                "id": crypto.randomBytes(8).toString('hex'),
                 "content": text,
                 "role": "user"
             }
         ],
-        "id": generateRandomId(),
+        "id": crypto.randomBytes(8).toString('hex'),
         "previewToken": null,
-        "userId": userId,
-        "codeModelMode": codeModelMode,
+        "userId": crypto.randomBytes(8).toString('hex'),
+        "codeModelMode": options.codeModelMode || true,
         "trendingAgentMode": {},
         "isMicMode": false,
         "userSystemPrompt": null,
-        "maxTokens": maxTokens,
+        "maxTokens": options.maxTokens || 2048,
         "playgroundTopP": null,
         "playgroundTemperature": null,
         "isChromeExt": false,
@@ -63,9 +80,9 @@ async function blackbox(text, options = {}) {
         "isMemoryEnabled": false,
         "mobileClient": false,
         "userSelectedModel": null,
-        "validated": generateRandomId(),
+        "validated": crypto.randomBytes(16).toString('hex'),
         "imageGenerationMode": false,
-        "webSearchModePrompt": webSearchMode,
+        "webSearchModePrompt": options.webSearchMode || false,
         "deepSearchMode": false,
         "domains": null,
         "vscodeClient": false,
@@ -79,13 +96,13 @@ async function blackbox(text, options = {}) {
         },
         "webSearchModeOption": {
             "autoMode": true,
-            "webMode": webSearchMode,
+            "webMode": options.webSearchMode || false,
             "offlineMode": false
         },
         "session": null,
-        "isPremium": isPremium,
+        "isPremium": options.isPremium || false,
         "subscriptionCache": null,
-        "beastMode": beastMode,
+        "beastMode": options.beastMode || false,
         "reasoningMode": false,
         "designerMode": false,
         "workspaceId": "",
@@ -94,28 +111,28 @@ async function blackbox(text, options = {}) {
     };
 
     try {
-        const headers = getDynamicHeaders();
+        console.log(`Attempting to POST to: ${url}`);
         const response = await axios.post(url, requestData, { 
-            headers,
+            headers: {
+                ...headers,
+                'Cookie': randomizeCookie(initialCookieString),
+                'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/' + 
+                              Math.floor(Math.random() * 50 + 100) + '.0.0.0 Safari/537.36'
+            },
             timeout: 30000
         });
-        
-        return {
-            success: true,
-            data: response.data,
-            metadata: {
-                requestId: requestData.id,
-                timestamp: new Date().toISOString()
-            }
-        };
+        return response.data;
     } catch (error) {
-        console.error("Error:", error.message);
-        return {
-            success: false,
-            error: error.message,
-            response: error.response?.data,
-            status: error.response?.status
-        };
+        console.error("Error:");
+        if (error.response) {
+            console.error("Status:", error.response.status);
+            console.error("Data:", error.response.data);
+        } else if (error.request) {
+            console.error("Request details:", error.request);
+        } else {
+            console.error("Error Message:", error.message);
+        }
+        throw error;
     }
 }
 
@@ -144,8 +161,7 @@ async function enhancedBlackbox(text, options = {}) {
     try {
         const test = await enhancedBlackbox('Aku mau kamu', {
             maxTokens: 4096,
-            beastMode: true,
-            webSearchMode: true
+            beastMode: true
         });
         console.log("Response:", test);
     } catch (error) {
@@ -153,8 +169,4 @@ async function enhancedBlackbox(text, options = {}) {
     }
 })();
 
-module.exports = {
-    blackbox: enhancedBlackbox,
-    generateRandomId,
-    getDynamicHeaders
-};
+module.exports = blackbox;
