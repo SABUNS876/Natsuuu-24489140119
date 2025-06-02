@@ -1,35 +1,57 @@
 const axios = require("axios");
+const crypto = require("crypto");
+
 const url = 'https://www.blackbox.ai/api/chat';
-const headers = {
+const defaultHeaders = {
     'Content-Type': 'application/json',
     'Accept': '*/*',
     'Accept-Language': 'en-US,en;q=0.9,id;q=0.8',
-    'Cookie': 'sessionId=429c3532-6a45-4dbc-83cb-2e906dbb87a7; render_app_version_affinity=dep-d0ufa5re5dus7396pq70; _gcl_au=1.1.842405073.1748857311; __Host-authjs.csrf-token=9970d6bf2f1aa6593be43c0413219592c454c12ae442844d482f0832d0082fd0%7C3d26219a2bdfc2d3d33535b7cedef80c79198aabb8dc03b866cd36c6d3339207; __Secure-authjs.callback-url=https%3A%2F%2Fwww.blackbox.ai; intercom-id-x55eda6t=cd93b365-ae6e-4e0b-a8fc-a95837187320; intercom-session-x55eda6t=; intercom-device-id-x55eda6t=e3dd8356-d39f-45b2-b0ef-ae85de5e87a8',
     'Origin': 'https://www.blackbox.ai',
     'Referer': 'https://www.blackbox.ai/',
-    'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/137.0.0.0 Safari/537.36 Edg/137.0.0.0',
+    'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/' + Math.floor(Math.random() * 50) + '.0.0.0 Safari/537.36',
     'Sec-Fetch-Dest': 'empty',
     'Sec-Fetch-Mode': 'cors',
     'Sec-Fetch-Site': 'same-origin'
 };
 
-async function blackbox(text) {
+function generateRandomId() {
+    return crypto.randomBytes(16).toString('hex');
+}
+
+function getDynamicHeaders() {
+    return {
+        ...defaultHeaders,
+        'Cookie': `sessionId=${generateRandomId()}; render_app_version_affinity=dep-${generateRandomId().substring(0, 16)}`,
+        'User-Agent': `Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/${Math.floor(100 + Math.random() * 50)}.0.0.0 Safari/537.36`
+    };
+}
+
+async function blackbox(text, options = {}) {
+    const {
+        userId = generateRandomId(),
+        maxTokens = 2048,
+        codeModelMode = false,
+        webSearchMode = true,
+        isPremium = false,
+        beastMode = true
+    } = options;
+
     const requestData = {
         "messages": [
             {
-                "id": "mama232",
+                "id": generateRandomId(),
                 "content": text,
                 "role": "user"
             }
         ],
-        "id": "mama232",
+        "id": generateRandomId(),
         "previewToken": null,
-        "userId": null,
-        "codeModelMode": true,
+        "userId": userId,
+        "codeModelMode": codeModelMode,
         "trendingAgentMode": {},
         "isMicMode": false,
         "userSystemPrompt": null,
-        "maxTokens": 1024,
+        "maxTokens": maxTokens,
         "playgroundTopP": null,
         "playgroundTemperature": null,
         "isChromeExt": false,
@@ -41,9 +63,9 @@ async function blackbox(text) {
         "isMemoryEnabled": false,
         "mobileClient": false,
         "userSelectedModel": null,
-        "validated": "00f37b34-a166-4efb-bce4-1312d87f2f94",
+        "validated": generateRandomId(),
         "imageGenerationMode": false,
-        "webSearchModePrompt": false,
+        "webSearchModePrompt": webSearchMode,
         "deepSearchMode": false,
         "domains": null,
         "vscodeClient": false,
@@ -57,13 +79,13 @@ async function blackbox(text) {
         },
         "webSearchModeOption": {
             "autoMode": true,
-            "webMode": false,
+            "webMode": webSearchMode,
             "offlineMode": false
         },
         "session": null,
-        "isPremium": false,
+        "isPremium": isPremium,
         "subscriptionCache": null,
-        "beastMode": false,
+        "beastMode": beastMode,
         "reasoningMode": false,
         "designerMode": false,
         "workspaceId": "",
@@ -72,32 +94,67 @@ async function blackbox(text) {
     };
 
     try {
-        const response = await axios.post(url, requestData, { headers: headers });
-        return response.data;
+        const headers = getDynamicHeaders();
+        const response = await axios.post(url, requestData, { 
+            headers,
+            timeout: 30000
+        });
+        
+        return {
+            success: true,
+            data: response.data,
+            metadata: {
+                requestId: requestData.id,
+                timestamp: new Date().toISOString()
+            }
+        };
     } catch (error) {
-        console.error("Error:");
-        if (error.response) {
-            console.error("Data:", error.response.data);
-            console.error("Status:", error.response.status);
-            console.error("Headers:", error.response.headers);
-        } else if (error.request) {
-            console.error("Request details:", error.request);
-        } else {
-            console.error("Error Message:", error.message);
-        }
-        console.error("Config used:", error.config);
-        throw error;
+        console.error("Error:", error.message);
+        return {
+            success: false,
+            error: error.message,
+            response: error.response?.data,
+            status: error.response?.status
+        };
     }
 }
 
-// Test the function (wrapped in async IIFE since top-level await isn't available in CJS)
+// Rate limiter to avoid hitting API limits
+const rateLimiter = {
+    lastRequest: 0,
+    minInterval: 2000, // 2 seconds between requests
+    async wait() {
+        const now = Date.now();
+        const waitTime = this.lastRequest + this.minInterval - now;
+        if (waitTime > 0) {
+            await new Promise(resolve => setTimeout(resolve, waitTime));
+        }
+        this.lastRequest = Date.now();
+    }
+};
+
+// Enhanced version with rate limiting
+async function enhancedBlackbox(text, options = {}) {
+    await rateLimiter.wait();
+    return await blackbox(text, options);
+}
+
+// Test the function
 (async () => {
     try {
-        const test = await blackbox('Aku mau kamu');
+        const test = await enhancedBlackbox('Aku mau kamu', {
+            maxTokens: 4096,
+            beastMode: true,
+            webSearchMode: true
+        });
         console.log("Response:", test);
     } catch (error) {
         console.error("Test failed:", error);
     }
 })();
 
-module.exports = blackbox;
+module.exports = {
+    blackbox: enhancedBlackbox,
+    generateRandomId,
+    getDynamicHeaders
+};
