@@ -141,6 +141,13 @@
       "name": "Stalker",
       "items": [
         {
+          "name": "Tiktok Stalk",
+          "desc": "Simple Tiktok Stalk",
+          "path": "/stalker/ttstalk?username=",
+          "status": "ready",
+          "requireKey": false
+        },
+        {
           "name": "Free Fire Stalk",
           "desc": "Simple Free Fire Stalk",
           "path": "/stalker/ffstalk?id=",
