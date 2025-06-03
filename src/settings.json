@@ -173,6 +173,13 @@
       "name": "AI Tools",
       "items": [
         {
+          "name": "Ghibli - AI",
+          "desc": "Convert Image To Ghibli",
+          "path": "/ai/toghibli?url=",
+          "status": "ready",
+          "requireKey": false
+        },
+        {
           "name": "Blackbox - AI",
           "desc": "Chat Dengan Blackbox AI",
           "path": "/ai/blackbox?prompt=",
