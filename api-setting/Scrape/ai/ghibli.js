@@ -1,8 +1,9 @@
 const axios = require("axios");
 const FormData = require("form-data");
+const { URL } = require("url");
 
 // Config
-const IMGBB_API_KEY = "99bfc1394de509d87a1dd1bff024cb28"; // Dapatkan di https://api.imgbb.com/
+const IMGBB_API_KEY = "YOUR_IMGBB_API_KEY"; // Dapatkan di https://api.imgbb.com/
 
 async function animegen(prompt) {
     try {
@@ -22,11 +23,17 @@ async function animegen(prompt) {
             }
         );
 
-        const imgUrl = res.data?.image || res.data?.url;
+        let imgUrl = res.data?.image || res.data?.url;
         if (!imgUrl) throw new Error("Tidak mendapatkan URL gambar dari API");
-        console.log("URL gambar didapatkan:", imgUrl);
+        
+        // 2. Perbaiki URL jika diperlukan
+        imgUrl = fixImageUrl(imgUrl);
+        console.log("URL gambar setelah diperbaiki:", imgUrl);
 
-        // 2. Upload ke ImgBB
+        // 3. Verifikasi URL sebelum upload
+        await verifyImageUrl(imgUrl);
+
+        // 4. Upload ke ImgBB
         console.log("Mengupload ke ImgBB...");
         const imgbbUrl = await uploadToImgBB(imgUrl);
         
@@ -41,17 +48,56 @@ async function animegen(prompt) {
         console.error("Error:", err.message);
         return {
             success: false,
-            error: err.message,
+            error: err.message.includes("Invalid URL") ? 
+                   "URL gambar tidak valid atau tidak dapat diakses" : 
+                   err.message,
             prompt: prompt
         };
     }
 }
 
+// Fungsi untuk memperbaiki URL gambar
+function fixImageUrl(url) {
+    try {
+        // Hilangkan karakter tidak perlu
+        url = url.trim();
+        
+        // Perbaiki URL tanpa protocol
+        if (!url.startsWith('http')) {
+            url = 'https://' + url;
+        }
+        
+        // Validasi URL
+        new URL(url);
+        
+        return url;
+    } catch (e) {
+        throw new Error(`URL gambar tidak valid: ${url}`);
+    }
+}
+
+// Fungsi untuk verifikasi URL gambar
+async function verifyImageUrl(url) {
+    try {
+        const response = await axios.head(url, {
+            timeout: 10000,
+            headers: {
+                'User-Agent': 'Mozilla/5.0'
+            }
+        });
+        
+        const contentType = response.headers['content-type'];
+        if (!contentType || !contentType.startsWith('image/')) {
+            throw new Error("URL tidak mengarah ke gambar yang valid");
+        }
+    } catch (err) {
+        throw new Error(`URL gambar tidak dapat diakses: ${err.message}`);
+    }
+}
+
+// Fungsi upload ke ImgBB yang lebih robust
 async function uploadToImgBB(imageUrl) {
     try {
-        // Validasi URL
-        new URL(imageUrl);
-
         const form = new FormData();
         form.append('image', imageUrl);
 
@@ -68,12 +114,18 @@ async function uploadToImgBB(imageUrl) {
         );
 
         if (!response.data?.data?.url) {
-            throw new Error("Gagal upload ke ImgBB: URL tidak ditemukan");
+            throw new Error("Respon tidak valid dari ImgBB");
         }
 
         return response.data.data.url;
     } catch (error) {
-        console.error("Error upload ImgBB:", error.message);
+        console.error("Error upload ImgBB:", error.response?.data || error.message);
+        
+        // Handle error spesifik dari ImgBB
+        if (error.response?.data?.error?.message) {
+            throw new Error(`ImgBB: ${error.response.data.error.message}`);
+        }
+        
         throw new Error(`Gagal upload gambar: ${error.message}`);
     }
 }
