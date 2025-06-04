@@ -3,33 +3,33 @@ const FormData = require("form-data");
 
 async function animegen(prompt) {
     try {
-        // 1. Generate image with Ghibli AI
-        console.log("Generating image with prompt:", prompt);
-        const res = await axios.post(
-            "https://ghibliart.net/api/generate-image", 
-            { prompt },
-            {
-                headers: {
-                    "accept": "application/json",
-                    "content-type": "application/json",
-                    "origin": "https://ghibliart.net",
-                    "referer": "https://ghibliart.net/",
-                    "user-agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/125.0.0.0 Safari/537.36",
-                },
-                timeout: 30000
-            }
-        );
+        // 1. Generate image
+        const res = await axios.post("https://ghibliart.net/api/generate-image", {
+            prompt
+        }, {
+            headers: {
+                "Content-Type": "application/json",
+                "Origin": "https://ghibliart.net",
+                "Referer": "https://ghibliart.net/",
+                "User-Agent": "Mozilla/5.0"
+            },
+            timeout: 30000
+        });
 
         const imgUrl = res.data?.image || res.data?.url;
-        if (!imgUrl) {
-            throw new Error("No image URL received from API");
-        }
-        console.log("Generated image URL:", imgUrl);
+        if (!imgUrl) throw new Error("Gagal mendapatkan URL gambar");
 
-        // 2. Upload to Catbox with proper FormData
-        console.log("Uploading to Catbox...");
-        const catboxUrl = await uploadToCatbox(imgUrl);
-        
+        // 2. Upload dengan metode yang lebih reliable
+        let catboxUrl;
+        try {
+            // Coba metode POST FormData dulu
+            catboxUrl = await uploadViaPost(imgUrl);
+        } catch (postError) {
+            console.log("Metode POST gagal, mencoba alternatif...");
+            // Coba metode fetch langsung
+            catboxUrl = await uploadViaFetch(imgUrl);
+        }
+
         return {
             success: true,
             originalUrl: imgUrl,
@@ -38,70 +38,49 @@ async function animegen(prompt) {
         };
 
     } catch (err) {
-        console.error("Error in animegen:", err.message);
+        console.error("Error:", err.message);
         return {
             success: false,
-            error: err.message,
+            error: err.message.includes("414") ? 
+                "URL gambar terlalu panjang untuk Catbox" : 
+                err.message,
             prompt: prompt
         };
     }
 }
 
-async function uploadToCatbox(imageUrl) {
-    try {
-        // Validate URL first
-        new URL(imageUrl); // Will throw if invalid
+// Metode 1: POST FormData (paling direkomendasikan)
+async function uploadViaPost(imgUrl) {
+    const form = new FormData();
+    form.append('reqtype', 'urlupload');
+    form.append('url', imgUrl);
 
-        const form = new FormData();
-        form.append('reqtype', 'urlupload');
-        form.append('url', imageUrl);
-
-        const response = await axios.post(
-            'https://catbox.moe/user/api.php',
-            form,
-            {
-                headers: {
-                    ...form.getHeaders(),
-                    "accept": "*/*",
-                    "user-agent": "Mozilla/5.0"
-                },
-                timeout: 15000
-            }
-        );
-
-        if (!response.data) {
-            throw new Error("Empty response from Catbox");
+    const response = await axios.post(
+        'https://catbox.moe/user/api.php',
+        form,
+        {
+            headers: form.getHeaders(),
+            timeout: 15000
         }
-
-        return response.data.trim();
-    } catch (error) {
-        console.error("Catbox upload failed, trying alternative...");
-        // Fallback to GET method if POST fails
-        return await uploadToCatboxFallback(imageUrl);
-    }
+    );
+    return response.data.trim();
 }
 
-async function uploadToCatboxFallback(imageUrl) {
-    try {
-        const encodedUrl = encodeURIComponent(imageUrl);
-        const uploadUrl = `https://catbox.moe/user/api.php?reqtype=urlupload&url=${encodedUrl}`;
-        
-        const response = await axios.get(uploadUrl, {
-            headers: {
-                "accept": "*/*",
-                "user-agent": "Mozilla/5.0"
-            },
-            timeout: 15000
-        });
+// Metode 2: Fetch langsung (fallback)
+async function uploadViaFetch(imgUrl) {
+    const controller = new AbortController();
+    const timeout = setTimeout(() => controller.abort(), 15000);
 
-        if (!response.data) {
-            throw new Error("Empty response from Catbox fallback");
+    const response = await fetch(`https://catbox.moe/user/api.php?reqtype=urlupload&url=${encodeURIComponent(imgUrl)}`, {
+        method: 'GET',
+        signal: controller.signal,
+        headers: {
+            'User-Agent': 'Mozilla/5.0'
         }
+    });
 
-        return response.data.trim();
-    } catch (error) {
-        throw new Error(`All Catbox upload attempts failed: ${error.message}`);
-    }
+    clearTimeout(timeout);
+    return await response.text();
 }
 
 module.exports = animegen;
