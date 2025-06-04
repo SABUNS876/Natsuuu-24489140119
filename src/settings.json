@@ -173,6 +173,13 @@
       "name": "AI Tools",
       "items": [
         {
+          "name": "Gpt 4.1 Nano",
+          "desc": "Chat Dengan GPT 4.1 Nano",
+          "path": "/ai/gpt-4-1-nano?prompt=",
+          "status": "ready",
+          "requireKey": false
+        },
+        {
           "name": "Blackbox - AI",
           "desc": "Chat Dengan Blackbox AI",
           "path": "/ai/blackbox?prompt=",
