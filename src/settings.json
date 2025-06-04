@@ -173,13 +173,6 @@
       "name": "AI Tools",
       "items": [
         {
-          "name": "Ghibli",
-          "desc": "Convert Image To Ghibli",
-          "path": "/ai/ghibli?prompt=&url=",
-          "status": "ready",
-          "requireKey": false
-        },
-        {
           "name": "Gpt 4.1 Nano",
           "desc": "Chat Dengan GPT 4.1 Nano",
           "path": "/ai/gpt-4-1-nano?prompt=",
