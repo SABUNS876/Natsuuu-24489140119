@@ -223,6 +223,13 @@
       "name": "Random",
       "items": [
         {
+          "name": "Hentai Waifu",
+          "desc": "You Get Hentai Waifu",
+          "path": "/random/hwaifu",
+          "status": "ready",
+          "requireKey": false
+        },
+        {
           "name": "Hentai Video",
           "desc": "Get Random Hentai Video",
           "path": "/random/hentai",
