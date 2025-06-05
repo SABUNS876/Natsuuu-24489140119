@@ -272,6 +272,13 @@
       "name": "Tools",
       "items": [
         {
+          "name": "Brat Foto",
+          "desc": "Buat Gambar Brat Sesuai Kriteria Mu",
+          "path": "/tools/brat?text",
+          "status": "ready",
+          "requireKey": false
+        },
+        {
           "name": "Remini Images",
           "desc": "Ubah Foto Mu Menjadi Menarik",
           "path": "/tools/remini?url=",
