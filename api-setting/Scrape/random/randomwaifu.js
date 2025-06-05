@@ -2,10 +2,25 @@ const axios = require('axios');
 
 async function getWaifu() {
   try {
-    const response = await axios.get('https://api.waifu.pics/sfw/waifu');
-    return response.data.url;
+    // Dapatkan URL gambar terlebih dahulu
+    const urlResponse = await axios.get('https://api.waifu.pics/sfw/waifu');
+    const imageUrl = urlResponse.data.url;
+    
+    // Ambil gambar sebagai buffer
+    const imageResponse = await axios.get(imageUrl, {
+      responseType: 'arraybuffer'
+    });
+    
+    // Kembalikan sebagai buffer dengan content type
+    return {
+      imageBuffer: Buffer.from(imageResponse.data, 'binary'),
+      contentType: imageResponse.headers['content-type']
+    };
+    
+    // Atau bisa juga langsung return Buffer saja:
+    // return Buffer.from(imageResponse.data, 'binary');
   } catch (error) {
-    console.error('Gagal mengambil gambar:', error);
+    console.error('Error getting waifu image:', error);
     throw error;
   }
 }
