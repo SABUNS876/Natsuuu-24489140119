@@ -43,7 +43,7 @@ async function artingAI(prompt) {
 
       const output = getRes?.data?.output;
       if (output && output.length) {
-        resultUrl = output[0]; // Asumsi output adalah URL gambar
+        resultUrl = output[0];
         break;
       }
 
@@ -52,11 +52,17 @@ async function artingAI(prompt) {
 
     if (!resultUrl) throw new Error('Gagal mendapatkan URL gambar');
 
-    // 3. Kembalikan respons dalam format yang diharapkan scraper
+    // 3. Download gambar sebagai buffer
+    const imageResponse = await axios.get(resultUrl, {
+      responseType: 'arraybuffer'
+    });
+
+    // 4. Kembalikan buffer gambar dan content type
     return {
-      image_url: resultUrl,
+      imageBuffer: Buffer.from(imageResponse.data, 'binary'),
+      contentType: imageResponse.headers['content-type'],
       prompt: prompt,
-      note: 'Gambar tersedia di URL di atas'
+      note: 'Gambar langsung dikirim sebagai buffer'
     };
 
   } catch (error) {
@@ -65,5 +71,4 @@ async function artingAI(prompt) {
   }
 }
 
-// Ekspor sebagai fungsi langsung (untuk kompatibilitas dengan sistem scraper Anda)
 module.exports = artingAI;
