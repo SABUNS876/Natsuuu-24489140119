@@ -86,13 +86,6 @@
       "name": "Downloader",
       "items": [
         {
-          "name": "Y2mate",
-          "desc": "Download Audio Youtube Menggunakan Y2mate",
-          "path": "/downloader/y2mate?url=",
-          "status": "ready",
-          "requireKey": false
-        },
-        {
           "name": "Twitter",
           "desc": "Download Twitter",
           "path": "/downloader/twitterdl?url=",
