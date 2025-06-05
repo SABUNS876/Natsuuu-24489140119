@@ -173,6 +173,13 @@
       "name": "AI Tools",
       "items": [
         {
+          "name": "Ghibli",
+          "desc": "Ubah Text Mu Ke Ghibli",
+          "path": "/ai/ghibli?prompt=",
+          "status": "ready",
+          "requireKey": false
+        },
+        {
           "name": "Gpt 4.1 Nano",
           "desc": "Chat Dengan GPT 4.1 Nano",
           "path": "/ai/gpt-4-1-nano?prompt=",
