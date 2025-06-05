@@ -265,6 +265,13 @@
       "name": "Tools",
       "items": [
         {
+          "name": "Brat Foto",
+          "desc": "Buat Text Brat",
+          "path": "/tools/brat?text=",
+          "status": "ready",
+          "requireKey": false
+        },
+        {
           "name": "Remini Images",
           "desc": "Ubah Foto Mu Menjadi Menarik",
           "path": "/tools/remini?url=",
