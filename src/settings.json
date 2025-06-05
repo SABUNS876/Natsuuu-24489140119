@@ -17,8 +17,8 @@
       "icon": "rocket"
     },
     {
-      "url": "https://chat.whatsapp.com/EG4L7JIyCVVEiAv9wbQMnc",
-      "name": "Group Chat",
+      "url": "https://whatsapp.com/channel/0029Vb3VN23ElagsQGXbMc0n",
+      "name": "My Channel",
       "icon": "layer-group"
     },
     {
@@ -27,9 +27,9 @@
       "icon": "code"
     },
     {
-      "url": "https://api.whatsapp.com/send/?phone=62881011040349&text=halo+bang+apikey+api+apa?",
-      "name": "get apikey",
-      "icon": "key"
+      "url": "https://chat.whatsapp.com/EG4L7JIyCVVEiAv9wbQMnc",
+      "name": "Group Chat",
+      "icon": "layer-group"
     }
   ],
   "categories": [
