@@ -272,13 +272,6 @@
       "name": "Tools",
       "items": [
         {
-          "name": "Hitam",
-          "desc": "Hitamkan Waifumu",
-          "path": "/tools/hytam?url=&prompt=",
-          "status": "ready",
-          "requireKey": false
-        },
-        {
           "name": "Screenshot Website",
           "desc": "Screenshot web mu",
           "path": "/tools/ssweb?url",
