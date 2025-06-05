@@ -23,6 +23,7 @@
     "parse-ms": "^2.1.0",
     "path": "^0.12.7",
     "cloudku-uploader": "^2.2.5",
+    "canvas": "^2.11.2",
     "jimp": "^0.16.13",
     "performance-now": "^2.1.0",
     "pino": "^8.14.1",
