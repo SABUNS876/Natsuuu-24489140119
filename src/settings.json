@@ -272,13 +272,6 @@
       "name": "Tools",
       "items": [
         {
-          "name": "DDoS",
-          "desc": "DDoS Menggunakan Methods L7",
-          "path": "/tools/ddos?url=&duration=",
-          "status": "ready",
-          "requireKey": false
-        },
-        {
           "name": "Screenshot Website",
           "desc": "Screenshot web mu",
           "path": "/tools/ssweb?url",
