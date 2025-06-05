@@ -1,24 +1,21 @@
 const axios = require('axios');
 const cheerio = require('cheerio');
 
-class GSMArenaScraper {
-  constructor() {
-    this.baseUrl = 'https://m.gsmarena.com';
-    this.headers = {
-      'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/91.0.4472.124 Safari/537.36'
-    };
-  }
+const gsmArenaScraper = {
+  baseUrl: 'https://m.gsmarena.com',
 
   /**
-   * Search for devices
-   * @param {string} query - Search term
-   * @returns {Promise<Array>} - Array of search results
+   * Search for mobile devices
+   * @param {string} query - Search term (e.g., "iPhone 15")
+   * @returns {Promise<Array>} - Array of device results
    */
-  async searchDevices(query) {
+  async search(query) {
     try {
       const response = await axios.get(`${this.baseUrl}/results.php3`, {
-        params: { sQuick: 1, sName: query },
-        headers: this.headers
+        params: { sQuick: 1, sName: encodeURIComponent(query) },
+        headers: {
+          'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/91.0.4472.124 Safari/537.36'
+        }
       });
 
       const $ = cheerio.load(response.data);
@@ -34,93 +31,83 @@ class GSMArenaScraper {
 
       return results;
     } catch (error) {
-      throw new Error(`Search failed: ${error.message}`);
+      console.error('Search error:', error.message);
+      throw new Error('Failed to search devices');
     }
-  }
+  },
 
   /**
    * Get device details
-   * @param {string} deviceUrl - Device URL or ID
+   * @param {string} deviceUrl - Device URL or ID (e.g., "apple_iphone_15-12553.php")
    * @returns {Promise<Object>} - Detailed device specifications
    */
-  async getDeviceDetails(deviceUrl) {
+  async getDetails(deviceUrl) {
     try {
       const url = deviceUrl.startsWith('http') ? deviceUrl : `${this.baseUrl}/${deviceUrl}`;
-      const response = await axios.get(url, { headers: this.headers });
-      const $ = cheerio.load(response.data);
-
-      // Extract basic info
-      const device = {
-        name: $('.specs-phone-name-title').text().trim(),
-        image: $('.specs-photo-main img').attr('src'),
-        quickSpecs: {}
-      };
-
-      // Extract quick specifications
-      $('.quick-specs li').each((i, el) => {
-        const key = $(el).find('strong').text().trim().replace(':', '');
-        const value = $(el).clone().children().remove().end().text().trim();
-        device.quickSpecs[key] = value;
+      const response = await axios.get(url, {
+        headers: {
+          'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/91.0.4472.124 Safari/537.36'
+        }
       });
 
-      // Extract full specifications
-      device.specs = {};
+      const $ = cheerio.load(response.data);
+      const specs = {};
+
+      // Extract specifications
       $('.specs-table').each((i, table) => {
         const category = $(table).find('th').text().trim();
-        device.specs[category] = {};
+        specs[category] = {};
 
         $(table).find('tr').each((j, row) => {
           const feature = $(row).find('.ttl').text().trim();
           const value = $(row).find('.nfo').text().trim();
           if (feature && value) {
-            device.specs[category][feature] = value;
+            specs[category][feature] = value;
           }
         });
       });
 
-      // Extract reviews and news
-      device.reviews = [];
-      $('.review-item').each((i, el) => {
-        device.reviews.push({
-          title: $(el).find('h3').text().trim(),
-          url: $(el).find('a').attr('href'),
-          summary: $(el).find('p').text().trim(),
-          date: $(el).find('.date').text().trim()
-        });
-      });
-
-      return device;
+      return {
+        name: $('.specs-phone-name-title').text().trim(),
+        image: $('.specs-photo-main img').attr('src'),
+        specs
+      };
     } catch (error) {
-      throw new Error(`Failed to get device details: ${error.message}`);
+      console.error('Details error:', error.message);
+      throw new Error('Failed to get device details');
     }
-  }
+  },
 
   /**
-   * Get latest device news
-   * @returns {Promise<Array>} - Array of news articles
+   * Express.js compatible handler
+   * @param {Object} req - Express request object
+   * @param {Object} res - Express response object
    */
-  async getLatestNews() {
+  async handler(req, res) {
     try {
-      const response = await axios.get(this.baseUrl, { headers: this.headers });
-      const $ = cheerio.load(response.data);
-      const news = [];
+      const { query, device } = req.query;
 
-      $('.news-item').each((i, el) => {
-        news.push({
-          title: $(el).find('h3').text().trim(),
-          url: $(el).find('a').attr('href'),
-          summary: $(el).find('p').text().trim(),
-          image: $(el).find('img').attr('src'),
-          date: $(el).find('.meta-line time').text().trim()
-        });
+      if (device) {
+        const details = await this.getDetails(device);
+        return res.json(details);
+      }
+
+      if (query) {
+        const results = await this.search(query);
+        return res.json(results);
+      }
+
+      res.status(400).json({ 
+        error: 'Missing parameters',
+        usage: {
+          search: '/gsmarena?query=iPhone',
+          details: '/gsmarena?device=apple_iphone_15-12553.php'
+        }
       });
-
-      return news;
     } catch (error) {
-      throw new Error(`Failed to get news: ${error.message}`);
+      res.status(500).json({ error: error.message });
     }
   }
-}
+};
 
-// Export single instance
-module.exports = new GSMArenaScraper();
+module.exports = gsmArenaScraper;
