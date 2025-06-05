@@ -1,83 +1,92 @@
+/*
+ * Image Upscaler using ImgLarger API
+ * Fixed upload issues and improved error handling
+ */
+
 const axios = require('axios');
 const FormData = require('form-data');
 
-const headers = {
-  accept: "application/json, text/plain, */*",
-  "accept-language": "id-ID,id;q=0.9,en-US;q=0.8,en;q=0.7",
-  origin: "https://imglarger.com",
-  referer: "https://imglarger.com/"
-};
+async function upscaleImage(imageBuffer, mimeType = 'image/jpeg') {
+  const API_URL = 'https://photoai.imglarger.com/api/PhoAi/Upload';
+  const STATUS_URL = 'https://photoai.imglarger.com/api/PhoAi/CheckStatus';
+  
+  const headers = {
+    'accept': 'application/json, text/plain, */*',
+    'accept-language': 'en-US,en;q=0.9',
+    'origin': 'https://imglarger.com',
+    'referer': 'https://imglarger.com/',
+    'user-agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/91.0.4472.124 Safari/537.36'
+  };
 
-function getExt(mime) {
-  if (/png/.test(mime)) return "png";
-  if (/jpe?g/.test(mime)) return "jpg";
-  return "bin";
-}
-
-function randomName(mime) {
-  return Math.random().toString(36).slice(2, 10) + "." + getExt(mime);
-}
-
-async function upscaleImage(buffer, mime) {
   try {
+    // 1. Prepare form data
     const form = new FormData();
-    form.append("file", buffer, { filename: randomName(mime), contentType: mime });
-    form.append("type", "13");
-    form.append("scaleRadio", "2");
+    form.append('file', imageBuffer, {
+      filename: `upscale-${Date.now()}.${mimeType.split('/')[1] || 'jpg'}`,
+      contentType: mimeType
+    });
+    form.append('type', '13'); // AI Type
+    form.append('scaleRadio', '2'); // Upscale level
 
-    // Upload image
-    const upload = await axios.post(
-      "https://photoai.imglarger.com/api/PhoAi/Upload",
-      form,
-      { headers: { ...headers, ...form.getHeaders() } }
-    );
+    // 2. Upload image
+    const uploadResponse = await axios.post(API_URL, form, {
+      headers: {
+        ...headers,
+        ...form.getHeaders()
+      },
+      maxContentLength: Infinity,
+      maxBodyLength: Infinity
+    });
 
-    const up = upload.data?.data || {};
-    if (!up.code || !up.type) {
-      throw new Error("Gagal upload ke ImgLarger");
+    if (!uploadResponse.data?.data?.code) {
+      throw new Error('Invalid response from upload API');
     }
 
-    // Check processing status
-    const statusHeaders = { ...headers, "content-type": "application/json" };
-    let url;
-    let attempts = 0;
+    const { code, type } = uploadResponse.data.data;
 
-    while (attempts++ < 40) {
-      const stat = await axios.post(
-        "https://photoai.imglarger.com/api/PhoAi/CheckStatus",
-        { code: up.code, type: String(up.type) },
-        { headers: statusHeaders }
-      );
+    // 3. Check processing status
+    let resultUrl;
+    for (let i = 0; i < 20; i++) { // Max 20 attempts (about 1 minute)
+      await new Promise(resolve => setTimeout(resolve, 3000)); // Wait 3 seconds between checks
       
-      const d = stat.data?.data || {};
-      if (d.status === "success" && d.downloadUrls?.[0]) {
-        url = d.downloadUrls[0];
+      const statusResponse = await axios.post(STATUS_URL, {
+        code,
+        type: String(type)
+      }, { headers });
+
+      const statusData = statusResponse.data?.data;
+      
+      if (statusData?.status === 'success' && statusData?.downloadUrls?.[0]) {
+        resultUrl = statusData.downloadUrls[0];
         break;
       }
-      if (d.status && d.status !== "waiting") {
-        throw new Error(`Upscaler gagal, status: ${d.status}`);
+      
+      if (statusData?.status === 'error') {
+        throw new Error(statusData.message || 'Processing failed');
       }
-      await new Promise(resolve => setTimeout(resolve, 3000));
     }
 
-    if (!url) {
-      throw new Error("Upscaler took too long. Try again later");
+    if (!resultUrl) {
+      throw new Error('Processing timeout');
     }
 
-    // Download the upscaled image
-    const imageResponse = await axios.get(url, {
+    // 4. Download the upscaled image
+    const imageResponse = await axios.get(resultUrl, {
       responseType: 'arraybuffer'
     });
 
     return {
-      imageBuffer: Buffer.from(imageResponse.data, 'binary'),
-      contentType: imageResponse.headers['content-type'] || mime,
-      originalUrl: url
+      success: true,
+      imageBuffer: Buffer.from(imageResponse.data),
+      contentType: imageResponse.headers['content-type'] || mimeType
     };
 
   } catch (error) {
-    console.error('Error in upscaleImage:', error);
-    throw error;
+    console.error('Upscale Error:', error.message);
+    return {
+      success: false,
+      message: error.response?.data?.message || error.message || 'Failed to upscale image'
+    };
   }
 }
 
