@@ -1,6 +1,4 @@
 const axios = require("axios");
-const fs = require("fs");
-const path = require("path");
 
 async function animegen(prompt) {
     try {
@@ -30,56 +28,40 @@ async function animegen(prompt) {
         const img = res.data?.image || res.data?.url;
 
         if (!img) {
-            console.error("Gak dapet gambar dari API");
-            return;
+            throw new Error("Gagal mendapatkan gambar dari API");
         }
 
-        if (img.startsWith("data:image/") || img.startsWith("iVBORw")) {
-            const B64 = img.replace(/^data:image\/\w+;base64,/, "");
-            const buffr = Buffer.from(B64, "base64");
+        let imageBuffer;
+        let contentType = 'image/jpeg'; // Default content type
 
-            const tmp = path.join(__dirname, "tmp");
-            if (!fs.existsSync(tmp)) {
-                fs.mkdirSync(tmp);
-            }
-
-            const namafile = `${prompt.replace(/\s+/g, "_")}-${Date.now()}.jpg`;
-            const pathfile = path.join(tmp, namafile);
-
-            fs.writeFile(pathfile, buffr, (err) => {
-                if (err) {
-                    console.error("Gagal simpen gambar:", err.message);
-                } else {
-                    console.log(`Gambar tersimpan di: ${pathfile}`);
-                }
-            });
+        if (img.startsWith("data:image/")) {
+            // Handle base64 image
+            const matches = img.match(/^data:(image\/\w+);base64,/);
+            if (matches) contentType = matches[1];
+            const base64Data = img.replace(/^data:image\/\w+;base64,/, "");
+            imageBuffer = Buffer.from(base64Data, "base64");
+        } else if (img.startsWith("iVBORw")) {
+            // Handle raw base64 without prefix
+            imageBuffer = Buffer.from(img, "base64");
         } else {
-            const imgurl = img;
-            const imgres = await axios.get(imgurl, {
-                responseType: "stream"
+            // Handle image URL
+            const imgResponse = await axios.get(img, {
+                responseType: 'arraybuffer'
             });
-
-            const tmp = path.join(__dirname, "tmp");
-            if (!fs.existsSync(tmp)) {
-                fs.mkdirSync(tmp);
-            }
-
-            const namafile = `${prompt.replace(/\s+/g, "_")}-${Date.now()}.jpg`;
-            const pathfile = path.join(tmp, namafile);
-            const writtr = fs.createWriteStream(pathfile);
-
-            imgres.data.pipe(writtr);
-
-            writtr.on("finish", () => {
-                console.log(`Gambar tersimpen di: ${pathfile}`);
-            });
-
-            writtr.on("error", (err) => {
-                console.error("Gagal simpen gambar:", err.message);
-            });
+            imageBuffer = Buffer.from(imgResponse.data, 'binary');
+            contentType = imgResponse.headers['content-type'] || contentType;
         }
+
+        return {
+            imageBuffer,
+            contentType,
+            prompt,
+            note: 'Gambar langsung dikirim sebagai buffer'
+        };
+
     } catch (err) {
         console.error("Error:", err.message);
+        throw new Error(`Gagal memproses gambar: ${err.message}`);
     }
 }
 
