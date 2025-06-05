@@ -265,6 +265,13 @@
       "name": "Tools",
       "items": [
         {
+          "name": "Upscale Images",
+          "desc": "Tingkatkan Resolusi Fotomu Dan Ubah Menjadi Lebih Menarik",
+          "path": "/tools/upscale?url=",
+          "status": "ready",
+          "requireKey": false
+        },
+        {
           "name": "Remini Images",
           "desc": "Ubah Foto Mu Menjadi Menarik",
           "path": "/tools/remini?url=",
