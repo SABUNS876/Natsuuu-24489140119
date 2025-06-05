@@ -1,47 +1,59 @@
 const fetch = require('node-fetch');
 
-class DesktopScreenshot {
-  constructor() {
-    this.apiKeys = ["1b484c", "965abb", "731a82", "194174"];
-    this.deviceProfile = {
-      type: "desktop",
-      dimension: "1024x768",
-      name: "💻 Desktop View"
-    };
-  }
+async function ssweb(url, options = {}) {
+    // Default options
+    const {
+        returnBuffer = true,  // Set false for HTTP handler usage
+        response = null       // Pass response object for HTTP mode
+    } = options;
 
-  /**
-   * Capture desktop screenshot of a webpage
-   * @param {string} url - Website URL
-   * @returns {Promise<Buffer>} - Image buffer
-   */
-  async capture(url) {
-    if (!url || !url.match(/^https?:\/\//i)) {
-      throw new Error('❌ URL tidak valid. Gunakan format http:// atau https://');
+    // Validate URL
+    if (!url || !/^https?:\/\//i.test(url)) {
+        const error = new Error('Invalid URL format. Please use http:// or https://');
+        if (response) {
+            return response.status(400).json({ error: error.message });
+        }
+        throw error;
     }
 
-    const randomKey = this.apiKeys[Math.floor(Math.random() * this.apiKeys.length)];
-    const apiUrl = `https://api.screenshotmachine.com/?key=${randomKey}&url=${
-      encodeURIComponent(url)
-    }&device=${this.deviceProfile.type}&dimension=${
-      this.deviceProfile.dimension
-    }&format=png&cacheLimit=0&delay=1000`;
+    // API configuration
+    const apiKeys = ["1b484c", "965abb", "731a82", "194174"];
+    const apiUrl = `https://api.screenshotmachine.com/?key=${
+        apiKeys[Math.floor(Math.random() * apiKeys.length)]
+    }&url=${encodeURIComponent(url)}&device=desktop&dimension=1024x768&format=png&cacheLimit=0&delay=1000`;
 
-    const response = await fetch(apiUrl);
-    
-    if (!response.ok) {
-      throw new Error('❌ Gagal mengambil screenshot. Coba lagi nanti.');
+    try {
+        const apiResponse = await fetch(apiUrl);
+        
+        if (!apiResponse.ok) {
+            throw new Error(`API request failed with status ${apiResponse.status}`);
+        }
+
+        const imageBuffer = await apiResponse.buffer();
+
+        // HTTP handler mode
+        if (response) {
+            response.set('Content-Type', 'image/png');
+            return response.send(imageBuffer);
+        }
+        
+        // Direct function mode
+        return returnBuffer ? imageBuffer : {
+            success: true,
+            image: imageBuffer,
+            meta: { url, device: 'Desktop', resolution: '1024x768' }
+        };
+
+    } catch (error) {
+        console.error('Screenshot error:', error);
+        if (response) {
+            return response.status(500).json({ 
+                error: 'Failed to capture screenshot',
+                details: error.message 
+            });
+        }
+        throw error;
     }
-
-    return {
-      image: await response.buffer(),
-      meta: {
-        url,
-        device: this.deviceProfile.name,
-        resolution: this.deviceProfile.dimension
-      }
-    };
-  }
 }
 
-module.exports = new DesktopScreenshot();
+module.exports = ssweb;
