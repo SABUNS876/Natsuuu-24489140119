@@ -272,6 +272,13 @@
       "name": "Tools",
       "items": [
         {
+          "name": "Screenshot Website",
+          "desc": "Screenshot web mu",
+          "path": "/tools/ssweb?url",
+          "status": "ready",
+          "requireKey": false
+        },
+        {
           "name": "Brat Foto",
           "desc": "Buat Gambar Brat Sesuai Kriteria Mu",
           "path": "/tools/brat?text",
