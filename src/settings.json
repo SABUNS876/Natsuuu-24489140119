@@ -173,6 +173,13 @@
       "name": "AI Tools",
       "items": [
         {
+          "name": "Image To Ghibli",
+          "desc": "Ubah Gambar Mu Menjadi Ghibli",
+          "path": "/ai/img2ghibli?url=",
+          "status": "ready",
+          "requireKey": false
+        },
+        {
           "name": "Ghibli",
           "desc": "Ubah Text Mu Ke Ghibli",
           "path": "/ai/ghibli?prompt=",
