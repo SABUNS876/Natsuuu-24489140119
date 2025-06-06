@@ -34,7 +34,7 @@ async function ghibliGenerator(imageUrl, options = {}) {
         const apiResponse = await axios.post(
             'https://ghibliimagegenerator.net/api/generate-image',
             {
-                prompt: "Transform this image into Ghibli art style",
+                prompt: "Ubah Gambar Ini Menjadi Lebih Bagus Dan Mirip Dengan Ghibli Ingat Jangan yang Lain Lagi",
                 style,
                 imageUrl
             },
