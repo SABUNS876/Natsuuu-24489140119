@@ -10,11 +10,11 @@ const axios = require('axios');
  */
 async function ghibliGenerator(imageUrl, options = {}) {
     const {
-        style = "Howl's Castle",
+        style = "Ghibli",
         response = null
     } = options;
 
-    const validStyles = ["Howl's Castle", "Spirited Away", "Totoro", "Princess Mononoke"];
+    const validStyles = ["Howl's Castle", "Spirited Away", "Totoro", "Princess Mononoke", "Ghibli"];
     
     // Validate inputs
     if (!imageUrl) {
