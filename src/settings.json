@@ -223,6 +223,13 @@
       "name": "Random",
       "items": [
         {
+          "name": "Check Gay",
+          "desc": "Seberapa Besar Lbgt Mu",
+          "path": "/random/gaycheck",
+          "status": "ready",
+          "requireKey": false
+        },
+        {
           "name": "Hentai Waifu",
           "desc": "You Get Hentai Waifu",
           "path": "/random/hwaifu",
