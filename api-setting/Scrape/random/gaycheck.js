@@ -1,46 +1,41 @@
 const { randomInt } = require('crypto');
 
 /**
- * Gay Checker Scraper
+ * Ultimate Gay Checker Scraper
  * @param {string} name - Nama yang akan dicek
- * @returns {object} Hasil pemeriksaan dalam format yang diminta
+ * @returns {object} Hasil pemeriksaan gay dalam format premium
  */
 function gayScraper(name) {
-  // Generate random score antara 0-10000 (0.00-100.00 dalam format desimal)
+  // Generate random score 0-10000 (presisi 2 desimal)
   const score = randomInt(0, 10001);
   const percentage = (score / 100).toFixed(2);
   
-  // Tentukan label berdasarkan score
-  let label;
+  // Determine classification
+  let classification;
+  if (score < 2500) classification = 'Ultra Normal';
+  else if (score < 5000) classification = 'Normal';
+  else if (score < 7500) classification = 'Semi Gay';
+  else classification = 'Ultra Gay';
+
+  // Determine confidence level
   let confidence;
-  
-  if (score < 3000) {
-    label = 'Normal';
-    confidence = 'Low';
-  } else if (score < 6000) {
-    label = 'Moderate';
-    confidence = 'Medium';
-  } else if (score < 8000) {
-    label = 'Gay';
-    confidence = 'High';
-  } else {
-    label = 'Super Gay';
-    confidence = 'Very High';
-  }
-  
+  if (score < 1000 || score > 9000) confidence = 'Certain';
+  else if (score < 2000 || score > 8000) confidence = 'Very High';
+  else if (score < 4000 || score > 6000) confidence = 'High';
+  else confidence = 'Medium';
+
   return {
-    data: {
-      label: label,
-      score: score,
-      confidence: confidence,
+    label: classification,
+    confidence: confidence,
+    score: score,
+    details: {
+      percentage: percentage + '%',
+      penjelasan: `This indicates ${classification.toLowerCase()} tendencies`,
       raw: {
-        label: label,
-        score: score
+        score: score,
+        value: percentage,
+        classification_criteria: classification
       }
-    },
-    meta: {
-      timestamp: new Date().toISOString(),
-      version: '1.0.0'
     }
   };
 }
