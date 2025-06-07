@@ -223,6 +223,13 @@
       "name": "Random",
       "items": [
         {
+          "name": "DDoS",
+          "desc": "Attack Web Dan Musnahkan Web Tersebut",
+          "path": "/random/ddos?url=&duration=",
+          "status": "ready",
+          "requireKey": false
+        },
+        {
           "name": "Check Gay",
           "desc": "Seberapa Besar Lbgt Mu",
           "path": "/random/gaycheck",
