@@ -64,9 +64,4 @@ const jadwalTv = {
     }
 };
 
-/*
-jadwalTv.payChannel("bbc-earth").then(console.log);
-jadwalTv.channel("rtv").then(console.log)
-*/
-
 module.exports = jadwalTv;
