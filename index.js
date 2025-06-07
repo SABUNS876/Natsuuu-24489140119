@@ -4,150 +4,203 @@ const fs = require('fs');
 const cors = require('cors');
 const axios = require('axios');
 
-// 1. Inisialisasi Aplikasi
 const app = express();
 
-// 2. Konfigurasi Dasar
-const CONFIG = {
-  PORT: process.env.PORT || 3000,
-  MAX_BODY_SIZE: '10mb',
-  REQUEST_TIMEOUT: 10000
-};
-
-// 3. Middleware Esensial
 app.use(cors());
-app.use(express.json({ limit: CONFIG.MAX_BODY_SIZE }));
-app.use(express.urlencoded({ extended: true, limit: CONFIG.MAX_BODY_SIZE }));
+app.use(express.json());
+app.use(express.urlencoded({ extended: true }));
 app.use(express.static('public'));
 app.use('/src', express.static('src'));
 
-// 4. Load Konfigurasi dengan Error Handling
-let apiConfig;
-try {
-  apiConfig = JSON.parse(fs.readFileSync(path.join(__dirname, 'src', 'settings.json')));
-} catch (err) {
-  console.error('ERROR LOADING CONFIG:', err);
-  process.exit(1);
-}
+const apiConfig = require('./src/settings.json');
 
-// 5. Fungsi untuk Load Scraper
-const loadScraper = (filePath) => {
-  try {
-    let scraper = require(filePath);
-    return scraper.default || scraper;
-  } catch (err) {
-    console.error(`ERROR LOADING SCRAPER ${path.basename(filePath)}:`, err);
-    return null;
-  }
-};
+const loadScrapers = () => {
+    const scrapers = {};
+    const endpointConfigs = {};
+    const baseDir = path.join(__dirname, 'api-setting', 'Scrape');
 
-// 6. Load Semua Scraper
-const loadAllScrapers = () => {
-  const scrapers = {};
-  const scrapersDir = path.join(__dirname, 'api-setting', 'Scrape');
+    apiConfig.categories.forEach(category => {
+        category.items.forEach(item => {
+            const cleanPath = item.path.split('?')[0];
+            endpointConfigs[cleanPath] = {
+                requireKey: item.requireKey !== undefined ? item.requireKey : apiConfig.apiSettings.defaultRequireKey,
+                path: item.path,
+                method: item.method || 'GET'
+            };
+        });
+    });
 
-  if (!fs.existsSync(scrapersDir)) {
-    console.error('SCRAPERS DIRECTORY NOT FOUND');
+    const walkDir = (dir) => {
+        const files = fs.readdirSync(dir);
+        files.forEach(file => {
+            const fullPath = path.join(dir, file);
+            if (fs.statSync(fullPath).isDirectory()) {
+                walkDir(fullPath);
+            } else if (file.endsWith('.js')) {
+                const relativePath = path.relative(baseDir, fullPath);
+                const routePath = '/' + relativePath
+                    .replace(/\\/g, '/')
+                    .replace('.js', '')
+                    .toLowerCase();
+                
+                const config = endpointConfigs[routePath] || {
+                    requireKey: apiConfig.apiSettings.defaultRequireKey,
+                    method: 'GET'
+                };
+                
+                scrapers[routePath] = {
+                    handler: require(fullPath),
+                    config: config
+                };
+            }
+        });
+    };
+    
+    walkDir(baseDir);
     return scrapers;
-  }
-
-  fs.readdirSync(scrapersDir).forEach(file => {
-    const fullPath = path.join(scrapersDir, file);
-    if (fs.statSync(fullPath).isFile() && file.endsWith('.js')) {
-      const routePath = '/' + file.replace('.js', '').toLowerCase();
-      const scraper = loadScraper(fullPath);
-      if (scraper) {
-        scrapers[routePath] = scraper;
-      }
-    }
-  });
-
-  return scrapers;
 };
 
-const scrapers = loadAllScrapers();
+const scrapers = loadScrapers();
 
-// 7. Middleware API Key
-const apiKeyMiddleware = (req, res, next) => {
-  const requireKey = apiConfig.apiSettings.defaultRequireKey;
-  if (!requireKey) return next();
+const checkApiKey = (req, res, next) => {
+    const path = req.path;
+    const endpoint = scrapers[path];
+    
+    if (!endpoint) {
+        return next();
+    }
 
-  const apiKey = req.headers['x-api-key'] || req.query.apikey;
-  if (!apiKey) {
-    return res.status(401).json({ 
-      status: false, 
-      message: 'API key required' 
-    });
-  }
-
-  if (!apiConfig.apiSettings.globalKey.includes(apiKey)) {
-    return res.status(403).json({ 
-      status: false, 
-      message: 'Invalid API key' 
-    });
-  }
-
-  next();
+    if (!endpoint.config.requireKey) {
+        return next();
+    }
+    
+    const apiKey = req.headers['x-api-key'] || req.query.apikey;
+    if (!apiKey) {
+        return res.status(401).json({ 
+            status: false, 
+            message: 'API key diperlukan untuk endpoint ini' 
+        });
+    }
+    
+    if (!apiConfig.apiSettings.globalKey.includes(apiKey)) {
+        return res.status(403).json({ 
+            status: false, 
+            message: 'API key tidak valid' 
+        });
+    }
+    
+    next();
 };
 
-// 8. Route Handler Utama
-app.get('/:scraper', apiKeyMiddleware, async (req, res) => {
-  try {
-    const scraperName = req.params.scraper.toLowerCase();
-    const scraper = scrapers['/' + scraperName];
-    
-    if (!scraper) {
-      return res.status(404).json({
-        status: false,
-        message: 'Scraper not found'
-      });
+const handleImageFromUrl = async (req, res, next) => {
+    // Hanya tangani jika ada imageUrl dalam body
+    if (req.body && req.body.imageUrl) {
+        try {
+            const response = await axios.get(req.body.imageUrl, {
+                responseType: 'arraybuffer'
+            });
+            
+            req.image = {
+                buffer: Buffer.from(response.data, 'binary'),
+                contentType: response.headers['content-type']
+            };
+        } catch (error) {
+            console.error('Error fetching image from URL:', error);
+            // Tidak return error, biarkan handler utama yang menangani
+        }
     }
+    next();
+};
 
-    const result = await scraper(req.query);
+Object.entries(scrapers).forEach(([route, { handler, config }]) => {
+    const method = config.method.toLowerCase();
     
-    if (result?.imageBuffer) {
-      return res.type(result.contentType || 'image/jpeg').send(result.imageBuffer);
-    }
-    
-    if (Buffer.isBuffer(result)) {
-      return res.type('image/jpeg').send(result);
-    }
-
-    res.json({
-      status: true,
-      data: result
+    app[method](route, checkApiKey, handleImageFromUrl, async (req, res) => {
+        try {
+            let params = [];
+            
+            if (method === 'get') {
+                params = Object.keys(req.query)
+                    .filter(key => key !== 'apikey')
+                    .map(key => req.query[key]);
+            } else {
+                params = [req.image || req.body]; // Gunakan image jika ada
+            }
+            
+            const result = await handler(...params);
+            
+            // Handle jika hasilnya adalah buffer gambar
+            if (result && result.imageBuffer && result.contentType) {
+                res.set('Content-Type', result.contentType);
+                return res.send(result.imageBuffer);
+            }
+            
+            // Handle jika hasilnya langsung buffer
+            if (Buffer.isBuffer(result)) {
+                res.set('Content-Type', 'image/jpeg'); // Default, bisa diganti sesuai kebutuhan
+                return res.send(result);
+            }
+            
+            // Handle jika hasilnya adalah URL gambar
+            if (result && typeof result === 'object' && result.url && result.url.match(/\.(jpeg|jpg|png|gif)$/i)) {
+                try {
+                    const imageResponse = await axios.get(result.url, {
+                        responseType: 'arraybuffer'
+                    });
+                    res.set('Content-Type', imageResponse.headers['content-type']);
+                    return res.send(Buffer.from(imageResponse.data, 'binary'));
+                } catch (error) {
+                    console.error('Error fetching image URL from result:', error);
+                    // Fallback ke JSON response jika gagal mengambil gambar
+                    return res.json({
+                        status: true,
+                        creator: apiConfig.apiSettings.creator,
+                        result
+                    });
+                }
+            }
+            
+            // Default JSON response
+            res.json({
+                status: true,
+                creator: apiConfig.apiSettings.creator,
+                result
+            });
+        } catch (error) {
+            console.error('Error in handler:', error);
+            res.status(500).json({
+                status: false,
+                message: error.message
+            });
+        }
     });
 
-  } catch (err) {
-    console.error('SCRAPER ERROR:', err);
-    res.status(500).json({
-      status: false,
-      message: err.message || 'Scraper failed'
-    });
-  }
+    if (config.path && config.path.includes('?')) {
+        app.get(config.path.split('?')[0], checkApiKey, (req, res) => {
+            res.status(400).json({
+                status: false,
+                message: 'Parameter diperlukan',
+                example: `${req.protocol}://${req.get('host')}${config.path}param_value`
+            });
+        });
+    }
 });
 
-// 9. Route Dasar
 app.get('/', (req, res) => {
-  res.json({
-    status: true,
-    message: 'Scraper API is running',
-    availableScrapers: Object.keys(scrapers).map(k => k.substring(1))
-  });
+    res.sendFile(path.join(__dirname, 'public', 'index.html'));
 });
 
-// 10. Error Handling Final
-app.use((err, req, res, next) => {
-  console.error('UNHANDLED ERROR:', err);
-  res.status(500).json({
-    status: false,
-    message: 'Internal server error'
-  });
+app.use((req, res) => {
+    res.status(404).sendFile(path.join(__dirname, 'public', '404.html'));
 });
 
-// 11. Start Server
-app.listen(CONFIG.PORT, () => {
-  console.log(`Server running on port ${CONFIG.PORT}`);
-  console.log('Available scrapers:');
-  Object.keys(scrapers).forEach(s => console.log(`- ${s.substring(1)}`));
+const PORT = process.env.PORT || 3000;
+app.listen(PORT, () => {
+    console.log(`Server berjalan di port ${PORT}`);
+    console.log('Endpoint yang tersedia:');
+    Object.entries(scrapers).forEach(([path, { config }]) => {
+        console.log(`- ${path} (Method: ${config.method}, Require Key: ${config.requireKey ? 'Ya' : 'Tidak'})`);
+    });
 });
+
+module.exports = app;
