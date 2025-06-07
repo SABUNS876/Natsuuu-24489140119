@@ -37,13 +37,6 @@
       "name": "Search",
       "items": [
         {
-          "name": "Jadwal Tv",
-          "desc": "Search Channel Tv Berdasarkan Jadwal Tertentu",
-          "path": "/search/jadwaltv?q=",
-          "status": "ready",
-          "requireKey": false
-        },
-          {
           "name": "Search Anime",
           "desc": "Temukan Anime Yang Kamu Suka",
           "path": "/search/anime?q=",
