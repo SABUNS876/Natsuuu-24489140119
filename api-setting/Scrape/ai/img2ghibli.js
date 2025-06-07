@@ -1,27 +1,24 @@
 const axios = require('axios');
 const FormData = require('form-data');
-const fs = require('fs');
 
 /**
  * Ghibli Style Image Generator
- * @param {string|Buffer} image - URL or Buffer of the image to transform
- * @param {object} options - Generation options
+ * @param {string|Buffer} image - URL or Buffer of image to transform
+ * @param {object} [options] - Generation options
  * @param {string} [options.style="Howl's Castle"] - Ghibli style
- * @param {object} [options.response] - Express response object (optional)
- * @returns {Promise<Buffer>} - Ghibli-style image buffer
+ * @returns {Promise<Buffer>} - Transformed image buffer
  */
-async function ghibliGenerator(image, options = {}) {
-    const { 
-        style = "Howl's Castle",
-        response = null 
-    } = options;
-
-    // Validate style
+async function createGhibliArt(image, options = {}) {
+    const { style = "Howl's Castle" } = options;
     const validStyles = ["Howl's Castle", "Spirited Away", "Totoro", "Princess Mononoke"];
+
+    // Validate inputs
     if (!validStyles.includes(style)) {
-        const error = new Error(`Invalid style. Choose from: ${validStyles.join(', ')}`);
-        if (response) return response.status(400).json({ error: error.message });
-        throw error;
+        throw new Error(`Invalid style. Choose from: ${validStyles.join(', ')}`);
+    }
+
+    if (!image) {
+        throw new Error('Image URL or Buffer is required');
     }
 
     try {
@@ -29,20 +26,24 @@ async function ghibliGenerator(image, options = {}) {
         
         // Handle both URL and Buffer input
         if (typeof image === 'string') {
-            if (!image.match(/^https?:\/\//)) {
-                throw new Error('Invalid URL format');
+            if (!/^https?:\/\//i.test(image)) {
+                throw new Error('Invalid URL format - must start with http:// or https://');
             }
             form.append('image_url', image);
         } else if (Buffer.isBuffer(image)) {
-            form.append('image_file', image, { filename: 'input.jpg' });
+            form.append('image_file', image, { 
+                filename: 'input.jpg',
+                contentType: 'image/jpeg'
+            });
         } else {
             throw new Error('Input must be URL string or image Buffer');
         }
 
+        form.append('transformation', 'ghibli');
         form.append('style', style);
-        form.append('prompt', 'Transform this image into Ghibli anime art style');
+        form.append('intensity', '0.8');
 
-        const apiResponse = await axios.post('https://api.ghibli-art-generator.com/v1/transform', form, {
+        const response = await axios.post('https://api.art-transform.com/v1/process', form, {
             headers: {
                 ...form.getHeaders(),
                 'Accept': 'image/png'
@@ -51,28 +52,17 @@ async function ghibliGenerator(image, options = {}) {
             timeout: 30000
         });
 
-        const imageBuffer = Buffer.from(apiResponse.data, 'binary');
-
-        if (response) {
-            response.set('Content-Type', 'image/png');
-            response.send(imageBuffer);
-            return;
+        // Verify we got an image back
+        if (!response.headers['content-type']?.includes('image')) {
+            throw new Error('API did not return an image');
         }
 
-        return imageBuffer;
+        return Buffer.from(response.data);
 
     } catch (error) {
-        console.error('Generation failed:', error.message);
-        const errorMsg = 'Failed to transform image to Ghibli style';
-        
-        if (response) {
-            return response.status(500).json({ 
-                error: errorMsg,
-                details: error.response?.data || error.message
-            });
-        }
-        throw new Error(errorMsg);
+        console.error('Transformation error:', error.message);
+        throw new Error(`Failed to create Ghibli art: ${error.response?.data?.message || error.message}`);
     }
 }
 
-module.exports = ghibliGenerator;
+module.exports = createGhibliArt;
