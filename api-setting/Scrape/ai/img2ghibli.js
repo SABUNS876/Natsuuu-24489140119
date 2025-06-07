@@ -1,70 +1,75 @@
 const axios = require('axios');
+const FormData = require('form-data');
+const fs = require('fs');
 
 /**
  * Ghibli Style Image Generator
- * @param {string} imageUrl - URL of the image to transform
- * @param {object} [options] - Generation options
- * @param {string} [options.style="Classic Ghibli"] - Ghibli style
- * @param {object} [options.response] - Express response object (for HTTP mode)
- * @returns {Promise<Buffer|object>} - Image buffer or HTTP response
+ * @param {string|Buffer} image - URL or Buffer of the image to transform
+ * @param {object} options - Generation options
+ * @param {string} [options.style="Howl's Castle"] - Ghibli style
+ * @param {object} [options.response] - Express response object (optional)
+ * @returns {Promise<Buffer>} - Ghibli-style image buffer
  */
-async function ghibliGenerator(imageUrl, options = {}) {
-    const {
-        style = "Classic Ghibli",
-        response = null
+async function ghibliGenerator(image, options = {}) {
+    const { 
+        style = "Howl's Castle",
+        response = null 
     } = options;
 
-    const validStyles = ["Classic Ghibli", "Spirited Away", "Totoro", "Princess Mononoke", "Howl's Castle"];
-    
-    // Validate inputs
-    if (!imageUrl) {
-        const error = new Error('Image URL is required');
-        if (response) return response.status(400).json({ error: error.message });
-        throw error;
-    }
-
+    // Validate style
+    const validStyles = ["Howl's Castle", "Spirited Away", "Totoro", "Princess Mononoke"];
     if (!validStyles.includes(style)) {
-        const error = new Error(`Invalid style. Use one of: ${validStyles.join(', ')}`);
+        const error = new Error(`Invalid style. Choose from: ${validStyles.join(', ')}`);
         if (response) return response.status(400).json({ error: error.message });
         throw error;
     }
 
     try {
-        // Call the API
-        const apiResponse = await axios.post(
-            'https://ghibliimagegenerator.net/api/generate-image',
-            {
-                prompt: "Transform this image into Studio Ghibli art style",
-                style,
-                imageUrl
-            },
-            {
-                headers: {
-                    'accept': '*/*',
-                    'content-type': 'application/json'
-                },
-                timeout: 30000
+        const form = new FormData();
+        
+        // Handle both URL and Buffer input
+        if (typeof image === 'string') {
+            if (!image.match(/^https?:\/\//)) {
+                throw new Error('Invalid URL format');
             }
-        );
+            form.append('image_url', image);
+        } else if (Buffer.isBuffer(image)) {
+            form.append('image_file', image, { filename: 'input.jpg' });
+        } else {
+            throw new Error('Input must be URL string or image Buffer');
+        }
 
-        // Process the image
-        const base64Data = apiResponse.data.imageData.split(',')[1] || apiResponse.data.imageData;
-        const imageBuffer = Buffer.from(base64Data, 'base64');
+        form.append('style', style);
+        form.append('prompt', 'Transform this image into Ghibli anime art style');
 
-        // Handle HTTP response if needed
+        const apiResponse = await axios.post('https://api.ghibli-art-generator.com/v1/transform', form, {
+            headers: {
+                ...form.getHeaders(),
+                'Accept': 'image/png'
+            },
+            responseType: 'arraybuffer',
+            timeout: 30000
+        });
+
+        const imageBuffer = Buffer.from(apiResponse.data, 'binary');
+
         if (response) {
             response.set('Content-Type', 'image/png');
-            return response.send(imageBuffer);
+            response.send(imageBuffer);
+            return;
         }
 
         return imageBuffer;
 
     } catch (error) {
-        console.error('Generation error:', error.message);
-        const errorMsg = 'Failed to generate Ghibli image';
+        console.error('Generation failed:', error.message);
+        const errorMsg = 'Failed to transform image to Ghibli style';
         
         if (response) {
-            return response.status(500).json({ error: errorMsg });
+            return response.status(500).json({ 
+                error: errorMsg,
+                details: error.response?.data || error.message
+            });
         }
         throw new Error(errorMsg);
     }
