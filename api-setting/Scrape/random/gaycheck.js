@@ -1,41 +1,53 @@
 const { randomInt } = require('crypto');
 
 /**
- * Ultimate Gay Checker Scraper
- * @param {string} name - Nama yang akan dicek
- * @returns {object} Hasil pemeriksaan gay dalam format premium
+ * Advanced Gay Meter Scraper
+ * @param {string} name - Name to analyze
+ * @returns {object} Comprehensive analysis with unique values
  */
 function gayScraper(name) {
-  // Generate random score 0-10000 (presisi 2 desimal)
-  const score = randomInt(0, 10001);
-  const percentage = (score / 100).toFixed(2);
+  // Generate completely independent random values
+  const baseScore = randomInt(0, 10001);
+  const displayScore = randomInt(1000, 9999); // Different from baseScore
+  const confidenceValue = randomInt(1, 100); // Separate confidence metric
+  const rawValue = randomInt(500, 9500); // Distinct raw measurement
   
-  // Determine classification
+  // Convert to percentages with different precision
+  const displayPercentage = (displayScore / 100).toFixed(2);
+  const rawPercentage = (rawValue / 95).toFixed(3); // Different calculation
+  
+  // Classification system
   let classification;
-  if (score < 2500) classification = 'Ultra Normal';
-  else if (score < 5000) classification = 'Normal';
-  else if (score < 7500) classification = 'Semi Gay';
-  else classification = 'Ultra Gay';
+  if (baseScore < 2000) classification = 'Hetero King';
+  else if (baseScore < 4500) classification = 'Mostly Straight';
+  else if (baseScore < 7000) classification = 'Bi-Curious';
+  else if (baseScore < 9000) classification = 'Rainbow Warrior';
+  else classification = 'Ultra Pride';
 
-  // Determine confidence level
-  let confidence;
-  if (score < 1000 || score > 9000) confidence = 'Certain';
-  else if (score < 2000 || score > 8000) confidence = 'Very High';
-  else if (score < 4000 || score > 6000) confidence = 'High';
-  else confidence = 'Medium';
+  // Confidence levels
+  let confidenceLevel;
+  if (confidenceValue > 85) confidenceLevel = 'Laboratory Certified';
+  else if (confidenceValue > 70) confidenceLevel = 'Clinically Proven';
+  else if (confidenceValue > 50) confidenceLevel = 'Algorithmically Determined';
+  else confidenceLevel = 'Marginally Detected';
 
   return {
-    label: classification,
-    confidence: confidence,
-    score: score,
-    details: {
-      percentage: percentage + '%',
-      penjelasan: `This indicates ${classification.toLowerCase()} tendencies`,
-      raw: {
-        score: score,
-        value: percentage,
-        classification_criteria: classification
-      }
+    mainResult: {
+      label: classification,
+      displayedScore: displayScore,
+      visualPercentage: displayPercentage + '%',
+      confidence: confidenceLevel
+    },
+    rawData: {
+      baseMeasurement: baseScore,
+      rawScore: rawValue,
+      scientificValue: rawPercentage + '%',
+      calibrationIndex: confidenceValue
+    },
+    interpretation: {
+      description: `The subject "${name}" shows ${classification.toLowerCase()} characteristics`,
+      scoreMeaning: `This places them at position ${displayScore} on the spectrum`,
+      confidenceInterpretation: `Measurement certainty: ${confidenceValue}/100`
     }
   };
 }
