@@ -1,65 +1,62 @@
 const { randomInt } = require('crypto');
 
-// Global monitoring data
-const apiData = {
-  startTime: process.hrtime(),
-  totalRequests: 0,
-  endpoints: new Map(),
-  status: 'active'
-};
+const apiMonitor = (() => {
+  // Private monitoring data
+  const data = {
+    startTime: process.hrtime(),
+    totalRequests: 0,
+    endpoints: new Map(),
+    status: 'active'
+  };
 
-// Middleware to track all requests
-function trackRequests(req, res, next) {
-  const endpoint = `${req.method} ${req.path}`;
-  
-  // Update counters
-  apiData.totalRequests++;
-  apiData.endpoints.set(endpoint, (apiData.endpoints.get(endpoint) || 0) + 1);
-  
-  next();
-}
+  // Format uptime
+  const formatUptime = () => {
+    const [seconds] = process.hrtime(data.startTime);
+    const days = Math.floor(seconds / 86400);
+    const hours = Math.floor((seconds % 86400) / 3600);
+    const minutes = Math.floor((seconds % 3600) / 60);
+    const secs = seconds % 60;
+    return `${days}d ${hours}h ${minutes}m ${secs}s`;
+  };
 
-// Get formatted uptime
-function formatUptime() {
-  const [seconds] = process.hrtime(apiData.startTime);
-  const days = Math.floor(seconds / 86400);
-  const hours = Math.floor((seconds % 86400) / 3600);
-  const minutes = Math.floor((seconds % 3600) / 60);
-  const secs = seconds % 60;
-  return `${days}d ${hours}h ${minutes}m ${secs}s`;
-}
-
-// Main monitoring function
-function getApiStats() {
-  try {
-    return {
-      author: 'Ramadhan - Tampan',
-      apiCount: apiData.endpoints.size,
-      uptime: formatUptime(),
-      status: apiData.status,
-      totalRequests: apiData.totalRequests,
-      endpoints: Object.fromEntries(apiData.endpoints),
-      lastUpdated: new Date().toLocaleString()
-    };
-  } catch (err) {
-    return {
-      error: 'Monitoring failed',
-      fallback: {
-        apiCount: 0,
-        uptime: '0d 0h 0m 0s',
-        status: 'unknown'
+  // Main function that handles both tracking and stats
+  return function apiHandler(req, res, next) {
+    if (req && res && next) {
+      // Middleware mode - track request
+      const endpoint = `${req.method} ${req.path}`;
+      data.totalRequests++;
+      data.endpoints.set(endpoint, (data.endpoints.get(endpoint) || 0) + 1);
+      next();
+    } else {
+      // Stats mode - return data
+      try {
+        return {
+          author: 'Ramadhan - Tampan',
+          apiCount: data.endpoints.size,
+          uptime: formatUptime(),
+          status: data.status,
+          totalRequests: data.totalRequests,
+          endpoints: Object.fromEntries(data.endpoints),
+          lastUpdated: new Date().toLocaleString()
+        };
+      } catch (err) {
+        return {
+          error: 'Monitoring failed',
+          fallback: {
+            apiCount: 0,
+            uptime: '0d 0h 0m 0s',
+            status: 'unknown'
+          }
+        };
       }
-    };
-  }
-}
+    }
+  };
+})();
 
-// Simulate status changes
+// Status rotation
 setInterval(() => {
-  apiData.status = ['active', 'degraded'][randomInt(0, 1)];
+  const statuses = ['active', 'degraded', 'maintenance'];
+  apiMonitor().status = statuses[randomInt(0, 2)];
 }, 300000);
 
-// Single export with both functions
-module.exports = {
-  trackRequests,
-  getStats: getApiStats
-};
+module.exports = apiMonitor;
