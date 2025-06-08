@@ -1,12 +1,13 @@
 const { randomInt } = require('crypto');
 
+// Global monitoring instance
 const apiMonitor = (() => {
-  // Private monitoring data
   const data = {
     startTime: process.hrtime(),
     totalRequests: 0,
     endpoints: new Map(),
-    status: 'active'
+    status: 'active',
+    lastRequest: null
   };
 
   // Format uptime with seconds
@@ -19,53 +20,51 @@ const apiMonitor = (() => {
     return `${days}d ${hours}h ${minutes}m ${secs}s`;
   };
 
-  // The main monitor function
-  const monitorFunction = function() {
-    // When used as middleware (req, res, next)
-    if (arguments.length === 3) {
-      const [req, res, next] = arguments;
+  // The monitoring function
+  function monitorFunction(req, res, next) {
+    try {
+      // Track the request
       const endpoint = `${req.method} ${req.path}`;
-      
       data.totalRequests++;
       data.endpoints.set(endpoint, (data.endpoints.get(endpoint) || 0) + 1);
       
-      // Add real-time monitoring to response
-      res.on('finish', () => {
-        data.lastRequest = {
-          endpoint,
-          time: new Date().toISOString(),
-          statusCode: res.statusCode
-        };
-      });
-      
-      return next();
-    }
-    
-    // When called without arguments (get stats)
-    try {
-      return {
-        author: 'Ramadhan - Tampan',
-        apiCount: data.endpoints.size,
-        uptime: formatUptime(),
-        status: data.status,
-        totalRequests: data.totalRequests,
-        endpoints: Object.fromEntries(data.endpoints),
-        lastRequest: data.lastRequest || null,
-        lastUpdated: new Date().toISOString()
+      // Store last request info
+      data.lastRequest = {
+        endpoint,
+        time: new Date().toISOString(),
+        statusCode: res.statusCode,
+        ip: req.ip
       };
-    } catch (err) {
+
+      // Continue to next middleware
+      if (next) return next();
+      
+      // If called directly, return stats
       return {
-        error: 'Monitoring failed',
-        fallbackData: {
-          apiCount: 0,
-          uptime: '0d 0h 0m 0s',
-          status: 'unknown'
+        status: true,
+        creator: "Natsu - Api",
+        result: {
+          author: "Ramadhan - Tampan",
+          apiCount: data.endpoints.size,
+          uptime: formatUptime(),
+          status: data.status,
+          totalRequests: data.totalRequests,
+          endpoints: Object.fromEntries(data.endpoints),
+          lastRequest: data.lastRequest,
+          lastUpdated: new Date().toISOString()
         }
       };
+    } catch (err) {
+      console.error('Monitoring error:', err);
+      if (next) return next();
+      return {
+        status: false,
+        error: "Monitoring service unavailable"
+      };
     }
-  };
+  }
 
-  // Status rotation
+  // Status rotation every 5 minutes
   setInterval(() => {
     data.status = ['active', 'degraded'][randomInt(0, 1)];
   }, 300000);
