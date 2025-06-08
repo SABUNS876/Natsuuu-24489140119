@@ -1,70 +1,66 @@
 const { randomInt } = require('crypto');
 
-// In-memory storage for monitoring data
-const apiData = {
-    startTime: new Date(),
-    totalRequests: 0,
-    activeUsers: new Set(),
-    apiStatus: 'operational'
-};
+class APIMonitor {
+  constructor() {
+    this.startTime = new Date();
+    this.totalRequests = 0;
+    this.activeUsers = new Map(); // IP: lastActiveTimestamp
+    this.apiStatus = "operational";
+    this.apiCount = 1; // Adjust if multiple APIs
+  }
 
-/**
- * Real API Monitoring System
- */
-function monitorAPI() {
-    // Update API status (simulated)
-    const updateStatus = () => {
-        const statusOptions = ['operational', 'degraded', 'maintenance'];
-        apiData.apiStatus = statusOptions[randomInt(0, 2)];
-    };
+  // Track a user request
+  trackRequest(ip) {
+    this.totalRequests++;
+    this.activeUsers.set(ip, Date.now());
+    this.cleanInactiveUsers(); // Auto-clean old users
+  }
 
-    // Track user activity
-    const trackUser = (ip) => {
-        apiData.activeUsers.add(ip);
-        apiData.totalRequests++;
-        
-        // Remove inactive users after 30 minutes
-        setTimeout(() => {
-            apiData.activeUsers.delete(ip);
-        }, 30 * 60 * 1000);
-    };
+  // Remove users inactive for >30 mins
+  cleanInactiveUsers() {
+    const now = Date.now();
+    for (const [ip, lastActive] of this.activeUsers.entries()) {
+      if (now - lastActive > 30 * 60 * 1000) {
+        this.activeUsers.delete(ip);
+      }
+    }
+  }
 
-    // Get current stats
-    const getStats = () => {
-        const now = new Date();
-        const uptime = Math.floor((now - apiData.startTime) / 1000);
-        
-        return {
-            apiCount: 1, // Assuming single API
-            uptime: formatUptime(uptime),
-            status: apiData.apiStatus,
-            activeUsers: apiData.activeUsers.size,
-            totalRequests: apiData.totalRequests,
-            lastUpdated: now.toISOString()
-        };
-    };
+  // Simulate status changes (replace with real checks)
+  updateStatus() {
+    const statuses = ["active", "degraded", "maintenance"];
+    this.apiStatus = statuses[randomInt(0, 2)];
+  }
 
-    // Format uptime seconds to readable format
-    const formatUptime = (seconds) => {
-        const days = Math.floor(seconds / (3600 * 24));
-        const hours = Math.floor((seconds % (3600 * 24)) / 3600);
-        const mins = Math.floor((seconds % 3600) / 60);
-        return `${days}d ${hours}h ${mins}m`;
-    };
-
+  // Get current stats
+  getStats() {
+    const uptimeMs = Date.now() - this.startTime;
     return {
-        trackUser,
-        getStats,
-        updateStatus
+      apiCount: this.apiCount,
+      uptime: this.formatUptime(uptimeMs),
+      status: this.apiStatus,
+      activeUsers: this.activeUsers.size,
+      totalRequests: this.totalRequests,
+      lastUpdated: new Date().toISOString(),
     };
+  }
+
+  // Format uptime (ms → "Xd Yh Zm")
+  formatUptime(ms) {
+    const seconds = Math.floor(ms / 1000);
+    const days = Math.floor(seconds / (3600 * 24));
+    const hours = Math.floor((seconds % (3600 * 24)) / 3600);
+    const minutes = Math.floor((seconds % 3600) / 60);
+    return `${days}d ${hours}h ${minutes}m`;
+  }
 }
 
-// Initialize monitor
-const apiMonitor = monitorAPI();
+// Singleton instance
+const apiMonitor = new APIMonitor();
 
-// Simulate status changes every 5-10 minutes
+// Simulate status changes (optional)
 setInterval(() => {
-    apiMonitor.updateStatus();
-}, randomInt(5, 11) * 60 * 1000);
+  apiMonitor.updateStatus();
+}, randomInt(5, 11) * 60 * 1000); // Every 5-10 mins
 
 module.exports = apiMonitor;
