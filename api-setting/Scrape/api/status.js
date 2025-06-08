@@ -1,66 +1,72 @@
 const { randomInt } = require('crypto');
 
-// Inisialisasi data
-const apiData = {
+// Simpan data di memory
+const apiStats = {
   startTime: Date.now(),
-  totalRequests: 0,
-  activeUsers: new Map(),
-  status: 'active'
+  requests: 0,
+  users: new Map() // Format: { ip: { battery: number, lastSeen: number } }
 };
 
-// Fungsi untuk format waktu
-function formatUptime(ms) {
-  const sec = Math.floor(ms / 1000);
-  const days = Math.floor(sec / 86400);
-  const hours = Math.floor((sec % 86400) / 3600);
-  const mins = Math.floor((sec % 3600) / 60);
-  return `${days}d ${hours}h ${mins}m`;
-}
-
 // Fungsi utama
-function getApiStats(ip) {
+function monitorAPI(ip, batteryLevel) {
   try {
-    // Update data
-    apiData.totalRequests++;
-    if (ip) apiData.activeUsers.set(ip, Date.now());
+    // Validasi input
+    if (!ip) ip = `192.168.${randomInt(1, 255)}.${randomInt(1, 255)}`;
+    if (batteryLevel === undefined) batteryLevel = randomInt(10, 100);
 
-    // Bersihkan user tidak aktif (>30 menit)
+    // Update data
+    apiStats.requests++;
+    apiStats.users.set(ip, { 
+      battery: batteryLevel,
+      lastSeen: Date.now() 
+    });
+
+    // Bersihkan user tidak aktif (>5 menit)
     const now = Date.now();
-    for (const [userIp, lastActive] of apiData.activeUsers.entries()) {
-      if (now - lastActive > 1800000) { // 30 menit dalam ms
-        apiData.activeUsers.delete(userIp);
-      }
+    for (const [userIp, data] of apiStats.users.entries()) {
+      if (now - data.lastSeen > 300000) apiStats.users.delete(userIp);
     }
 
-    // Return statistik terkini
+    // Hitung uptime
+    const uptimeMs = now - apiStats.startTime;
+    const uptime = {
+      days: Math.floor(uptimeMs / 86400000),
+      hours: Math.floor((uptimeMs % 86400000) / 3600000),
+      minutes: Math.floor((uptimeMs % 3600000) / 60000)
+    };
+
     return {
       success: true,
-      apiCount: 30,
-      uptime: formatUptime(now - apiData.startTime),
-      status: apiData.status,
-      totalRequests: apiData.totalRequests,
-      lastUpdated: new Date().toISOString()
+      stats: {
+        ipAddress: ip,
+        battery: `${batteryLevel}%`,
+        totalRequests: apiStats.requests,
+        activeUsers: apiStats.users.size,
+        uptime: `${uptime.days}d ${uptime.hours}h ${uptime.minutes}m`,
+        users: Array.from(apiStats.users.entries()).map(([ip, data]) => ({
+          ip,
+          battery: `${data.battery}%`,
+          lastActive: new Date(data.lastSeen).toLocaleTimeString()
+        }))
+      }
     };
   } catch (err) {
-    // Fallback jika ada error
     return {
       success: false,
-      error: 'Failed to get stats',
-      fallbackData: {
-        apiCount: 1,
-        uptime: '0d 0h 0m',
-        status: 'unknown',
+      error: "Monitoring error",
+      fallbackStats: {
+        ipAddress: "N/A",
+        battery: "N/A",
+        totalRequests: 0,
         activeUsers: 0,
-        totalRequests: 0
+        uptime: "0d 0h 0m"
       }
     };
   }
 }
 
-// Simulasi perubahan status (opsional)
-setInterval(() => {
-  const statuses = ['active', 'degraded', 'maintenance'];
-  apiData.status = statuses[randomInt(0, 2)];
-}, 300000); // Update setiap 5 menit
+// Contoh penggunaan
+console.log(monitorAPI("192.168.1.105", 85)); // Manual input
+console.log(monitorAPI()); // Auto-generate data
 
-module.exports = getApiStats;
+module.exports = monitorAPI;
