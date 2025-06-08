@@ -314,6 +314,19 @@
           "requireKey": false,
           "params": {
             "code": "masukkan codemu"
+            }
+        }
+      ]
+    },
+    {
+      "name": "API",
+      "items": [
+        {
+          "name": "Status Api",
+          "desc": "Cek Status Api",
+          "path": "/api/status",
+          "status": "ready",
+          "requireKey": false
           }
         }
       ]
