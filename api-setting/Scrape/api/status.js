@@ -1,82 +1,70 @@
-const os = require('os');
 const { randomInt } = require('crypto');
 
+// In-memory storage for monitoring data
+const apiData = {
+    startTime: new Date(),
+    totalRequests: 0,
+    activeUsers: new Set(),
+    apiStatus: 'operational'
+};
+
 /**
- * Robust API Monitoring Scraper
- * @returns {object} API status with user and system metrics
+ * Real API Monitoring System
  */
-function apiStatusScraper() {
-    try {
-        // Generate safe random data within reasonable limits
-        const generateSafeData = () => {
-            const now = new Date();
-            return {
-                timestamp: now.toISOString(),
-                apiStatus: {
-                    overall: ['operational', 'degraded', 'maintenance'][randomInt(0, 2)],
-                    endpoints: {
-                        total: randomInt(5, 50),
-                        active: randomInt(5, 45),
-                        deprecated: randomInt(0, 3)
-                    },
-                    responseTime: `${randomInt(20, 800)}ms`,
-                    lastChecked: now.toLocaleTimeString()
-                },
-                users: {
-                    active: randomInt(1, 150),
-                    countries: ['US', 'ID', 'IN', 'BR', 'UK', 'DE'].slice(0, randomInt(1, 6)),
-                    devices: {
-                        mobile: randomInt(0, 100),
-                        desktop: randomInt(0, 100),
-                        tablet: randomInt(0, 30)
-                    }
-                },
-                system: {
-                    cpu: {
-                        load: os.loadavg()[0].toFixed(2),
-                        cores: os.cpus().length
-                    },
-                    memory: {
-                        total: `${(os.totalmem() / 1024 / 1024 / 1024).toFixed(1)}GB`,
-                        free: `${(os.freemem() / 1024 / 1024 / 1024).toFixed(1)}GB`,
-                        usage: `${((1 - os.freemem() / os.totalmem()) * 100).toFixed(1)}%`
-                    },
-                    uptime: formatUptime(os.uptime())
-                },
-                metadata: {
-                    version: '1.0.0',
-                    generatedIn: `${randomInt(5, 50)}ms`
-                }
-            };
-        };
+function monitorAPI() {
+    // Update API status (simulated)
+    const updateStatus = () => {
+        const statusOptions = ['operational', 'degraded', 'maintenance'];
+        apiData.apiStatus = statusOptions[randomInt(0, 2)];
+    };
 
-        // Helper to format uptime
-        const formatUptime = (seconds) => {
-            const days = Math.floor(seconds / (3600 * 24));
-            seconds %= 3600 * 24;
-            const hours = Math.floor(seconds / 3600);
-            seconds %= 3600;
-            const minutes = Math.floor(seconds / 60);
-            return `${days}d ${hours}h ${minutes}m`;
-        };
+    // Track user activity
+    const trackUser = (ip) => {
+        apiData.activeUsers.add(ip);
+        apiData.totalRequests++;
+        
+        // Remove inactive users after 30 minutes
+        setTimeout(() => {
+            apiData.activeUsers.delete(ip);
+        }, 30 * 60 * 1000);
+    };
 
+    // Get current stats
+    const getStats = () => {
+        const now = new Date();
+        const uptime = Math.floor((now - apiData.startTime) / 1000);
+        
         return {
-            success: true,
-            ...generateSafeData()
+            apiCount: 1, // Assuming single API
+            uptime: formatUptime(uptime),
+            status: apiData.apiStatus,
+            activeUsers: apiData.activeUsers.size,
+            totalRequests: apiData.totalRequests,
+            lastUpdated: now.toISOString()
         };
+    };
 
-    } catch (error) {
-        console.error('Monitoring error:', error);
-        return {
-            success: false,
-            error: {
-                message: 'Failed to generate monitoring data',
-                code: 'MONITORING_ERROR',
-                details: process.env.NODE_ENV === 'development' ? error.message : undefined,
-                timestamp: new Date().toISOString()
-            }
-        };
-    }
+    // Format uptime seconds to readable format
+    const formatUptime = (seconds) => {
+        const days = Math.floor(seconds / (3600 * 24));
+        const hours = Math.floor((seconds % (3600 * 24)) / 3600);
+        const mins = Math.floor((seconds % 3600) / 60);
+        return `${days}d ${hours}h ${mins}m`;
+    };
+
+    return {
+        trackUser,
+        getStats,
+        updateStatus
+    };
 }
 
-module.exports = apiStatusScraper;
+// Initialize monitor
+const apiMonitor = monitorAPI();
+
+// Simulate status changes every 5-10 minutes
+setInterval(() => {
+    apiMonitor.updateStatus();
+}, randomInt(5, 11) * 60 * 1000);
+
+module.exports = apiMonitor;
