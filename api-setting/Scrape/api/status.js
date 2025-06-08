@@ -36,15 +36,10 @@ function getApiStats(ip) {
     // Return statistik terkini
     return {
       success: true,
-      apiCount: 30,
+      endpoint: 31,
       uptime: formatUptime(), // Sekarang termasuk detik
       status: apiData.status,
-      totalRequests: apiData.totalRequests,
-      activeUsers: apiData.activeUsers.size,
-      lastUpdated: new Date().toISOString(),
-      timing: {
-        resolution: 'seconds',
-        clockSource: 'process.hrtime()'
+      request: apiData.totalRequests
       }
     };
   } catch (err) {
