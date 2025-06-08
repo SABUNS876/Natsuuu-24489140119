@@ -78,7 +78,7 @@ async function ddosScraper(target, duration) {
                 rawData: {
                     startTimestamp: startTime,
                     endTimestamp: endTime,
-                    method: 'SCRAPER_FETCH'
+                    method: 'NINJA'
                 }
             });
         }, duration * 1000 + 1000); // Extra second to ensure cleanup
