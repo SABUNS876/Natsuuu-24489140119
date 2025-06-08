@@ -1,31 +1,25 @@
 const { randomInt } = require('crypto');
-const onHeaders = require('on-headers');
 
-// Persistent data storage
+// Global monitoring data
 const apiData = {
   startTime: process.hrtime(),
   totalRequests: 0,
-  endpoints: new Map(), // Track all endpoints
+  endpoints: new Map(),
   status: 'active'
 };
 
-// Middleware to monitor all requests
-function apiMonitorMiddleware(req, res, next) {
-  // Increment counters
-  apiData.totalRequests++;
-  
+// Middleware to track all requests
+function trackRequests(req, res, next) {
   const endpoint = `${req.method} ${req.path}`;
+  
+  // Update counters
+  apiData.totalRequests++;
   apiData.endpoints.set(endpoint, (apiData.endpoints.get(endpoint) || 0) + 1);
-
-  // Add monitoring header
-  onHeaders(res, () => {
-    res.setHeader('X-API-Monitor', 'active');
-  });
-
+  
   next();
 }
 
-// Precise uptime formatter
+// Get formatted uptime
 function formatUptime() {
   const [seconds] = process.hrtime(apiData.startTime);
   const days = Math.floor(seconds / 86400);
@@ -35,22 +29,22 @@ function formatUptime() {
   return `${days}d ${hours}h ${minutes}m ${secs}s`;
 }
 
-// Get complete stats
-function getCompleteStats() {
+// Main monitoring function
+function getApiStats() {
   try {
     return {
       author: 'Ramadhan - Tampan',
-      apiCount: Array.from(apiData.endpoints.keys()).length,
+      apiCount: apiData.endpoints.size,
       uptime: formatUptime(),
       status: apiData.status,
       totalRequests: apiData.totalRequests,
       endpoints: Object.fromEntries(apiData.endpoints),
-      lastUpdated: new Date().toISOString()
+      lastUpdated: new Date().toLocaleString()
     };
   } catch (err) {
     return {
-      error: 'Monitoring error',
-      fallbackData: {
+      error: 'Monitoring failed',
+      fallback: {
         apiCount: 0,
         uptime: '0d 0h 0m 0s',
         status: 'unknown'
@@ -59,7 +53,13 @@ function getCompleteStats() {
   }
 }
 
+// Simulate status changes
+setInterval(() => {
+  apiData.status = ['active', 'degraded'][randomInt(0, 1)];
+}, 300000);
+
+// Single export with both functions
 module.exports = {
-  middleware: apiMonitorMiddleware,
-  getStats: getCompleteStats
+  trackRequests,
+  getStats: getApiStats
 };
