@@ -25,7 +25,7 @@ function getApiStats() {
 
     return {
       author: 'Ramadhan - Tampan',
-      apiCount: 30,
+      apiCount: 31,
       uptime: formatUptime(),
       status: apiData.status,
       Requests: apiData.totalRequests
