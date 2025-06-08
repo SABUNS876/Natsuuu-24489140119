@@ -1,66 +1,45 @@
-const { randomInt } = require('crypto');
-
 class APIMonitor {
   constructor() {
     this.startTime = new Date();
     this.totalRequests = 0;
-    this.activeUsers = new Map(); // IP: lastActiveTimestamp
-    this.apiStatus = "operational";
-    this.apiCount = 1; // Adjust if multiple APIs
+    this.activeUsers = new Map(); // { ip: lastActive }
+    this.status = "operational";
   }
 
-  // Track a user request
-  trackRequest(ip) {
+  track(ip) {
     this.totalRequests++;
     this.activeUsers.set(ip, Date.now());
-    this.cleanInactiveUsers(); // Auto-clean old users
+    this.cleanup();
   }
 
-  // Remove users inactive for >30 mins
-  cleanInactiveUsers() {
+  cleanup() {
     const now = Date.now();
-    for (const [ip, lastActive] of this.activeUsers.entries()) {
+    for (const [ip, lastActive] of this.activeUsers) {
       if (now - lastActive > 30 * 60 * 1000) {
         this.activeUsers.delete(ip);
       }
     }
   }
 
-  // Simulate status changes (replace with real checks)
-  updateStatus() {
-    const statuses = ["active", "degraded", "maintenance"];
-    this.apiStatus = statuses[randomInt(0, 2)];
-  }
-
-  // Get current stats
   getStats() {
-    const uptimeMs = Date.now() - this.startTime;
     return {
-      apiCount: this.apiCount,
-      uptime: this.formatUptime(uptimeMs),
-      status: this.apiStatus,
+      apiCount: 1, // Ganti jika punya banyak API
+      uptime: this.formatUptime(),
+      status: this.status,
       activeUsers: this.activeUsers.size,
       totalRequests: this.totalRequests,
-      lastUpdated: new Date().toISOString(),
+      updatedAt: new Date().toISOString()
     };
   }
 
-  // Format uptime (ms → "Xd Yh Zm")
-  formatUptime(ms) {
-    const seconds = Math.floor(ms / 1000);
-    const days = Math.floor(seconds / (3600 * 24));
-    const hours = Math.floor((seconds % (3600 * 24)) / 3600);
-    const minutes = Math.floor((seconds % 3600) / 60);
-    return `${days}d ${hours}h ${minutes}m`;
+  formatUptime() {
+    const sec = Math.floor((Date.now() - this.startTime) / 1000);
+    const days = Math.floor(sec / 86400);
+    const hours = Math.floor((sec % 86400) / 3600);
+    const mins = Math.floor((sec % 3600) / 60);
+    return `${days}d ${hours}h ${mins}m`;
   }
 }
 
-// Singleton instance
-const apiMonitor = new APIMonitor();
-
-// Simulate status changes (optional)
-setInterval(() => {
-  apiMonitor.updateStatus();
-}, randomInt(5, 11) * 60 * 1000); // Every 5-10 mins
-
-module.exports = apiMonitor;
+const monitor = new APIMonitor();
+module.exports = monitor;
