@@ -35,10 +35,9 @@ function getApiStats(ip) {
     // Return statistik terkini
     return {
       success: true,
-      apiCount: 1,
+      apiCount: 30,
       uptime: formatUptime(now - apiData.startTime),
       status: apiData.status,
-      activeUsers: apiData.activeUsers.size,
       totalRequests: apiData.totalRequests,
       lastUpdated: new Date().toISOString()
     };
