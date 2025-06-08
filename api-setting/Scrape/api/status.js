@@ -43,7 +43,7 @@ function getApiStats() {
 
 // Status change simulation (doesn't affect uptime)
 setInterval(() => {
-  const statuses = ['active', 'degraded', 'maintenance'];
+  const statuses = ['active'];
   apiData.status = statuses[randomInt(0, 2)];
 }, 300000); // Changes every 5 minutes
 
