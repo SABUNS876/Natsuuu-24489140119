@@ -1,83 +1,80 @@
 const os = require('os');
 const { randomInt } = require('crypto');
-const axios = require('axios');
 
 /**
- * Advanced API Monitoring Scraper
- * @returns {object} Comprehensive API usage statistics
+ * Robust API Monitoring Scraper
+ * @returns {object} API status with user and system metrics
  */
-async function apiStatusScraper() {
+function apiStatusScraper() {
     try {
-        // Generate realistic random data
-        const activeUsers = randomInt(1, 100);
-        const batteryLevels = Array.from({length: activeUsers}, () => randomInt(10, 100));
-        const endpointCount = randomInt(5, 30);
-        
-        // Generate fake IP addresses for users
-        const userIPs = Array.from({length: activeUsers}, () => {
-            return `${randomInt(1, 255)}.${randomInt(0, 255)}.${randomInt(0, 255)}.${randomInt(1, 255)}`;
-        });
+        // Generate safe random data within reasonable limits
+        const generateSafeData = () => {
+            const now = new Date();
+            return {
+                timestamp: now.toISOString(),
+                apiStatus: {
+                    overall: ['operational', 'degraded', 'maintenance'][randomInt(0, 2)],
+                    endpoints: {
+                        total: randomInt(5, 50),
+                        active: randomInt(5, 45),
+                        deprecated: randomInt(0, 3)
+                    },
+                    responseTime: `${randomInt(20, 800)}ms`,
+                    lastChecked: now.toLocaleTimeString()
+                },
+                users: {
+                    active: randomInt(1, 150),
+                    countries: ['US', 'ID', 'IN', 'BR', 'UK', 'DE'].slice(0, randomInt(1, 6)),
+                    devices: {
+                        mobile: randomInt(0, 100),
+                        desktop: randomInt(0, 100),
+                        tablet: randomInt(0, 30)
+                    }
+                },
+                system: {
+                    cpu: {
+                        load: os.loadavg()[0].toFixed(2),
+                        cores: os.cpus().length
+                    },
+                    memory: {
+                        total: `${(os.totalmem() / 1024 / 1024 / 1024).toFixed(1)}GB`,
+                        free: `${(os.freemem() / 1024 / 1024 / 1024).toFixed(1)}GB`,
+                        usage: `${((1 - os.freemem() / os.totalmem()) * 100).toFixed(1)}%`
+                    },
+                    uptime: formatUptime(os.uptime())
+                },
+                metadata: {
+                    version: '1.0.0',
+                    generatedIn: `${randomInt(5, 50)}ms`
+                }
+            };
+        };
 
-        // Get real system status
-        const systemLoad = os.loadavg();
-        const memoryUsage = process.memoryUsage();
-        const uptime = process.uptime();
-
-        // Check external API status (example)
-        let apiStatus = 'unknown';
-        try {
-            await axios.get('https://api.natsuclouds.biz.id/health');
-            apiStatus = 'operational';
-        } catch {
-            apiStatus = 'degraded';
-        }
+        // Helper to format uptime
+        const formatUptime = (seconds) => {
+            const days = Math.floor(seconds / (3600 * 24));
+            seconds %= 3600 * 24;
+            const hours = Math.floor(seconds / 3600);
+            seconds %= 3600;
+            const minutes = Math.floor(seconds / 60);
+            return `${days}d ${hours}h ${minutes}m`;
+        };
 
         return {
-            status: 'active',
-            timestamp: new Date().toISOString(),
-            apiStatus: {
-                overall: apiStatus,
-                endpoints: {
-                    total: endpointCount,
-                    active: randomInt(1, endpointCount),
-                    deprecated: randomInt(0, 3)
-                },
-                responseTime: `${randomInt(50, 500)}ms`
-            },
-            usageMetrics: {
-                activeUsers: activeUsers,
-                concurrentRequests: randomInt(1, activeUsers * 3),
-                requestsLastHour: randomInt(100, 10000),
-                dataTransferred: `${randomInt(10, 1000)}MB`
-            },
-            userDetails: {
-                ips: userIPs,
-                battery: batteryLevels,
-                locations: userIPs.map(ip => `Unknown (${ip})`),
-                devices: Array.from({length: activeUsers}, () => 
-                    ['Mobile', 'Desktop', 'Tablet'][randomInt(0, 2)])
-            },
-            systemMetrics: {
-                cpuLoad: `${(systemLoad[0] * 100).toFixed(1)}%`,
-                memoryUsage: `${(memoryUsage.heapUsed / memoryUsage.heapTotal * 100).toFixed(1)}%`,
-                uptime: `${Math.floor(uptime / 3600)}h ${Math.floor((uptime % 3600) / 60)}m`,
-                nodeVersion: process.version
-            },
-            rawData: {
-                loadAverage: systemLoad,
-                memoryBreakdown: {
-                    rss: `${(memoryUsage.rss / 1024 / 1024).toFixed(1)}MB`,
-                    heapTotal: `${(memoryUsage.heapTotal / 1024 / 1024).toFixed(1)}MB`,
-                    heapUsed: `${(memoryUsage.heapUsed / 1024 / 1024).toFixed(1)}MB`
-                }
-            }
+            success: true,
+            ...generateSafeData()
         };
+
     } catch (error) {
         console.error('Monitoring error:', error);
         return {
-            status: 'error',
-            message: 'Failed to gather monitoring data',
-            error: error.message
+            success: false,
+            error: {
+                message: 'Failed to generate monitoring data',
+                code: 'MONITORING_ERROR',
+                details: process.env.NODE_ENV === 'development' ? error.message : undefined,
+                timestamp: new Date().toISOString()
+            }
         };
     }
 }
