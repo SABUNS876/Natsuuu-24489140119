@@ -1,29 +1,70 @@
 const { randomInt } = require('crypto');
 
-function getPersonalStats(ip, battery) {
-  // Jika tidak ada data, generate random (untuk demo)
-  const actualIp = ip || `192.168.${randomInt(1, 255)}.${randomInt(1, 255)}`;
-  const actualBattery = battery !== undefined ? battery : randomInt(10, 100);
+// Inisialisasi data (persistent)
+const apiData = {
+  startTime: process.hrtime(), // High-resolution time
+  totalRequests: 0,
+  activeUsers: new Map(),
+  status: 'active'
+};
 
-  return {
-    yourDevice: {
-      ipAddress: actualIp,
-      batteryLevel: `${actualBattery}%`,
-      lastUpdate: new Date().toLocaleTimeString()
-    },
-    apiStatus: {
-      uptime: formatUptime(process.uptime() * 1000),
-      totalRequests: randomInt(1, 1000) // Simulasi global requests
+// Fungsi untuk format waktu presisi detik
+function formatUptime() {
+  const [seconds, nanoseconds] = process.hrtime(apiData.startTime);
+  const days = Math.floor(seconds / 86400);
+  const hours = Math.floor((seconds % 86400) / 3600);
+  const minutes = Math.floor((seconds % 3600) / 60);
+  const secs = seconds % 60;
+  return `${days}d ${hours}h ${minutes}m ${secs}s`;
+}
+
+// Fungsi utama
+function getApiStats(ip) {
+  try {
+    // Update data
+    apiData.totalRequests++;
+    if (ip) apiData.activeUsers.set(ip, Date.now());
+
+    // Bersihkan user tidak aktif (>30 menit)
+    const now = Date.now();
+    for (const [userIp, lastActive] of apiData.activeUsers.entries()) {
+      if (now - lastActive > 1800000) {
+        apiData.activeUsers.delete(userIp);
+      }
     }
-  };
+
+    // Return statistik terkini
+    return {
+      success: true,
+      apiCount: 30,
+      uptime: formatUptime(), // Sekarang termasuk detik
+      status: apiData.status,
+      totalRequests: apiData.totalRequests,
+      activeUsers: apiData.activeUsers.size,
+      lastUpdated: new Date().toISOString(),
+      timing: {
+        resolution: 'seconds',
+        clockSource: 'process.hrtime()'
+      }
+    };
+  } catch (err) {
+    return {
+      success: false,
+      error: 'Failed to get stats',
+      fallbackData: {
+        apiCount: 30,
+        uptime: '0d 0h 0m 0s', // Format konsisten
+        status: 'unknown',
+        totalRequests: 0
+      }
+    };
+  }
 }
 
-// Format waktu dari detik ke "Xd Yh Zm"
-function formatUptime(ms) {
-  const days = Math.floor(ms / 86400000);
-  const hours = Math.floor((ms % 86400000) / 3600000);
-  const mins = Math.floor((ms % 3600000) / 60000);
-  return `${days}d ${hours}h ${mins}m`;
-}
+// Update status tanpa mempengaruhi uptime
+setInterval(() => {
+  const statuses = ['active', 'degraded', 'maintenance'];
+  apiData.status = statuses[randomInt(0, 2)];
+}, 300000); // Tetap 5 menit untuk status change
 
-module.exports = getPersonalStats;
+module.exports = getApiStats;
