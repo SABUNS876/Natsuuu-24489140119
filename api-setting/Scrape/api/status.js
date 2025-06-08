@@ -5,7 +5,7 @@ const apiData = {
   startTime: Date.now(),
   totalRequests: 0,
   activeUsers: new Map(),
-  status: 'operational'
+  status: 'active'
 };
 
 // Fungsi untuk format waktu
