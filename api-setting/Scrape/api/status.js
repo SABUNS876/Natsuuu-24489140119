@@ -1,67 +1,66 @@
 const { randomInt } = require('crypto');
 
-// Inisialisasi data
-const apiData = {
-  startTime: Date.now(),
-  totalRequests: 0,
-  activeUsers: new Map(),
-  status: 'operational'
-};
+class APIMonitor {
+  constructor() {
+    this.startTime = new Date();
+    this.totalRequests = 0;
+    this.activeUsers = new Map(); // IP: lastActiveTimestamp
+    this.apiStatus = "operational";
+    this.apiCount = 1; // Adjust if multiple APIs
+  }
 
-// Fungsi untuk format waktu
-function formatUptime(ms) {
-  const sec = Math.floor(ms / 1000);
-  const days = Math.floor(sec / 86400);
-  const hours = Math.floor((sec % 86400) / 3600);
-  const mins = Math.floor((sec % 3600) / 60);
-  return `${days}d ${hours}h ${mins}m`;
-}
+  // Track a user request
+  trackRequest(ip) {
+    this.totalRequests++;
+    this.activeUsers.set(ip, Date.now());
+    this.cleanInactiveUsers(); // Auto-clean old users
+  }
 
-// Fungsi utama
-function getApiStats(ip) {
-  try {
-    // Update data
-    apiData.totalRequests++;
-    if (ip) apiData.activeUsers.set(ip, Date.now());
-
-    // Bersihkan user tidak aktif (>30 menit)
+  // Remove users inactive for >30 mins
+  cleanInactiveUsers() {
     const now = Date.now();
-    for (const [userIp, lastActive] of apiData.activeUsers.entries()) {
-      if (now - lastActive > 1800000) { // 30 menit dalam ms
-        apiData.activeUsers.delete(userIp);
+    for (const [ip, lastActive] of this.activeUsers.entries()) {
+      if (now - lastActive > 30 * 60 * 1000) {
+        this.activeUsers.delete(ip);
       }
     }
+  }
 
-    // Return statistik terkini
+  // Simulate status changes (replace with real checks)
+  updateStatus() {
+    const statuses = ["operational", "degraded", "maintenance"];
+    this.apiStatus = statuses[randomInt(0, 2)];
+  }
+
+  // Get current stats
+  getStats() {
+    const uptimeMs = Date.now() - this.startTime;
     return {
-      success: true,
-      apiCount: 1,
-      uptime: formatUptime(now - apiData.startTime),
-      status: apiData.status,
-      activeUsers: apiData.activeUsers.size,
-      totalRequests: apiData.totalRequests,
-      lastUpdated: new Date().toISOString()
+      apiCount: this.apiCount,
+      uptime: this.formatUptime(uptimeMs),
+      status: this.apiStatus,
+      activeUsers: this.activeUsers.size,
+      totalRequests: this.totalRequests,
+      lastUpdated: new Date().toISOString(),
     };
-  } catch (err) {
-    // Fallback jika ada error
-    return {
-      success: false,
-      error: 'Failed to get stats',
-      fallbackData: {
-        apiCount: 1,
-        uptime: '0d 0h 0m',
-        status: 'unknown',
-        activeUsers: 0,
-        totalRequests: 0
-      }
-    };
+  }
+
+  // Format uptime (ms → "Xd Yh Zm")
+  formatUptime(ms) {
+    const seconds = Math.floor(ms / 1000);
+    const days = Math.floor(seconds / (3600 * 24));
+    const hours = Math.floor((seconds % (3600 * 24)) / 3600);
+    const minutes = Math.floor((seconds % 3600) / 60);
+    return `${days}d ${hours}h ${minutes}m`;
   }
 }
 
-// Simulasi perubahan status (opsional)
-setInterval(() => {
-  const statuses = ['operational', 'degraded', 'maintenance'];
-  apiData.status = statuses[randomInt(0, 2)];
-}, 300000); // Update setiap 5 menit
+// Singleton instance
+const apiMonitor = new APIMonitor();
 
-module.exports = getApiStats;
+// Simulate status changes (optional)
+setInterval(() => {
+  apiMonitor.updateStatus();
+}, randomInt(5, 11) * 60 * 1000); // Every 5-10 mins
+
+module.exports = apiMonitor;
