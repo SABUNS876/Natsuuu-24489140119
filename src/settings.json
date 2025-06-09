@@ -46,7 +46,7 @@
           {
           "name": "Search Pinterest",
           "desc": "Temukan foto di berdasarkan kriteria tertentu",
-          "path": "/search/savepin?q=",
+          "path": "/search/pinterest?q=",
           "status": "ready",
           "requireKey": false
         },
