@@ -6,7 +6,7 @@ const pint = async (query) => {
             "screen-dpr": "4",
             "x-pinterest-pws-handler": "www/search/[scope].js",
         },
-        "method": "post"
+        "method": "head"
     });
     
     if (!response.ok) throw new Error(`Error ${response.status} ${response.statusText}`);
