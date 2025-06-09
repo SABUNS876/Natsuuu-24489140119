@@ -1,25 +1,49 @@
 const fetch = require('node-fetch');
 
-const pint = async (query) => {
-    const response = await fetch("https://www.pinterest.com/resource/BaseSearchResource/get/?data=" + encodeURIComponent('{"options":{"query":"' + encodeURIComponent(query) + '"}}'), {
-        "headers": {
-            "screen-dpr": "4",
-            "x-pinterest-pws-handler": "www/search/[scope].js",
+async function getSinglePinterestImage(query) {
+  try {
+    // 1. Cari gambar di Pinterest
+    const searchResponse = await fetch(
+      `https://www.pinterest.com/resource/BaseSearchResource/get/?data=${
+        encodeURIComponent(`{"options":{"query":"${query}"}}`)
+      }`, {
+        headers: {
+          "screen-dpr": "4",
+          "x-pinterest-pws-handler": "www/search/[scope].js"
         },
-        "method": "head"
-    });
-    
-    if (!response.ok) throw new Error(`Error ${response.status} ${response.statusText}`);
-    const rhl = response.headers.get("Link");
-    if (!rhl) throw new Error(`Search results for "${query}" are empty`);
-    
-    const links = [...rhl.matchAll(/<(.*?)>/gm)].map(v => v[1]);
-    return links;
-};
+        method: "HEAD"
+      }
+    );
 
-// Example usage
-pint("furina")
-    .then(console.log)
-    .catch(err => console.log(err.message));
+    if (!searchResponse.ok) throw new Error('Gagal mencari gambar');
+    
+    const linkHeader = searchResponse.headers.get("Link");
+    if (!linkHeader) throw new Error('Tidak ada hasil ditemukan');
+    
+    // Ambil URL gambar pertama
+    const imageUrl = [...linkHeader.matchAll(/<(.*?)>/g)][0][1];
+    
+    // 2. Download gambar
+    const imageResponse = await fetch(imageUrl);
+    const buffer = await imageResponse.arrayBuffer();
+    const base64Image = Buffer.from(buffer).toString('base64');
+    const mimeType = imageResponse.headers.get('content-type') || 'image/jpeg';
+    
+    // 3. Return gambar tunggal dalam base64
+    return {
+      success: true,
+      query,
+      image: `data:${mimeType};base64,${base64Image}`,
+      imageType: mimeType,
+      imageSize: buffer.byteLength
+    };
+    
+  } catch (error) {
+    return {
+      success: false,
+      error: error.message
+    };
+  }
+}
 
-module.exports = pint;
+module.exports = getSinglePinterestImage;
