@@ -1,10 +1,9 @@
 const fetch = require('node-fetch');
 
-async function getPinterestImageBuffer(query, options = {}) {
-    // Default options
+async function getRandomPinterestImage(query, options = {}) {
     const {
-        returnBuffer = true,  // Set false untuk mendapatkan objek response
-        response = null       // Objek response HTTP (jika digunakan di route handler)
+        returnBuffer = true,
+        response = null
     } = options;
 
     try {
@@ -21,42 +20,43 @@ async function getPinterestImageBuffer(query, options = {}) {
             }
         );
 
-        if (!searchResponse.ok) throw new Error('Failed to search Pinterest');
+        if (!searchResponse.ok) throw new Error('Gagal mencari di Pinterest');
         
         const linkHeader = searchResponse.headers.get("Link");
-        if (!linkHeader) throw new Error('No images found for this query');
+        if (!linkHeader) throw new Error('Tidak ada gambar ditemukan');
         
-        // 2. Ambil gambar pertama
-        const imageUrl = [...linkHeader.matchAll(/<(.*?)>/g)][0][1];
-        const imageResponse = await fetch(imageUrl);
+        // 2. Dapatkan semua gambar
+        const allImageUrls = [...linkHeader.matchAll(/<(.*?)>/g)].map(match => match[1]);
         
-        if (!imageResponse.ok) throw new Error('Failed to download image');
+        // 3. Pilih gambar random
+        const randomIndex = Math.floor(Math.random() * allImageUrls.length);
+        const selectedImageUrl = allImageUrls[randomIndex];
         
+        // 4. Download gambar
+        const imageResponse = await fetch(selectedImageUrl);
         const imageBuffer = await imageResponse.buffer();
         const mimeType = imageResponse.headers.get('content-type') || 'image/jpeg';
-
-        // 3. Handle response berdasarkan mode
+        
+        // 5. Return hasil
         if (response) {
-            // Mode HTTP handler
             response.set('Content-Type', mimeType);
             return response.send(imageBuffer);
         }
         
-        // Mode langsung
         return returnBuffer ? imageBuffer : {
             success: true,
             image: imageBuffer,
             mimeType,
             query,
-            imageUrl
+            imageUrl: selectedImageUrl
         };
 
     } catch (error) {
-        console.error('Pinterest scraper error:', error);
+        console.error('Error:', error);
         
         if (response) {
             return response.status(500).json({ 
-                error: 'Failed to fetch Pinterest image',
+                error: 'Gagal mengambil gambar',
                 details: error.message 
             });
         }
@@ -65,4 +65,4 @@ async function getPinterestImageBuffer(query, options = {}) {
     }
 }
 
-module.exports = getPinterestImageBuffer;
+module.exports = getRandomPinterestImage;
