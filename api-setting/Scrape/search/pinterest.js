@@ -2,14 +2,11 @@ const fetch = require('node-fetch');
 const fs = require('fs');
 const path = require('path');
 
-// Cache untuk menyimpan history gambar yang sudah ditampilkan
-const imageCache = new Map();
-
+// Cache untuk menyimpan history gambar yan
 async function getRandomPinterestImage(query, options = {}) {
     const {
         returnBuffer = true,
-        response = null,
-        cacheDir = '/pinterest_cache' // Folder untuk cache gambar
+        response = null
     } = options;
 
     try {
