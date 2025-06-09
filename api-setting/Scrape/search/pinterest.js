@@ -9,7 +9,7 @@ async function getRandomPinterestImage(query, options = {}) {
     const {
         returnBuffer = true,
         response = null,
-        cacheDir = './pinterest_cache' // Folder untuk cache gambar
+        cacheDir = '/pinterest_cache' // Folder untuk cache gambar
     } = options;
 
     try {
