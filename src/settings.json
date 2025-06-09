@@ -86,13 +86,6 @@
       "name": "Downloader",
       "items": [
         {
-          "name": "Mediafire",
-          "desc": "Download Mediafire",
-          "path": "/downloader/mediafire?url=",
-          "status": "ready",
-          "requireKey": false,
-        },
-          {
           "name": "Twitter",
           "desc": "Download Twitter",
           "path": "/downloader/twitterdl?url=",
