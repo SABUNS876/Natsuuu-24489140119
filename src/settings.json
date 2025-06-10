@@ -37,6 +37,13 @@
       "name": "Search",
       "items": [
         {
+          "name": "Ikoapp Search",
+          "desc": "Search Anime Menggunakan Ikoapp",
+          "path": "/search/ikoapp?q=",
+          "status": "ready",
+          "requireKey": false
+        },
+          {
           "name": "Search Anime",
           "desc": "Temukan Anime Yang Kamu Suka",
           "path": "/search/anime?q=",
