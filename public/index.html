@@ -1,0 +1,101 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <link href="https://fonts.googleapis.com/css2?family=Montserrat:wght@400;700&display=swap" rel="stylesheet">
+
+    <title>RunwaySale - Maintenance</title>
+
+    <style>
+        html,
+        body {
+            height: 100%;
+        }
+        body {
+            background: white;
+
+            font-family: 'Montserrat', sans-serif;
+            margin: 0;
+            font-size: 14px;
+            min-height: 100%;
+            overflow: auto;
+            user-select: none;
+            color: #36424F;
+        }
+
+        .block {
+            position: relative;
+            display: flex;
+            align-items: center;
+            flex-direction: column;
+            justify-content: center;
+            min-height: 100%;
+            padding: 30px 0;
+            box-sizing: border-box;
+        }
+
+        .title {
+            font-weight: bold;
+            text-align: center;
+            font-size: 100px;
+            margin-bottom: 5px;
+        }
+
+        .title--1 {
+            font-size: 24px;
+        }
+
+        .title--2 {
+            font-size: 38px;
+        }
+
+        .content {
+            text-align: center;
+            /* color: white; */
+            max-width: 300px;
+            margin-left: auto;
+            margin-right: auto;
+        }
+
+        .content p {
+            margin: 20px 0;
+        }
+
+        .button {
+            font-size: 16px;
+            text-transform: uppercase;
+            background: #F05032;
+            color: white;
+            height: 50px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            min-width: 200px;
+            cursor: pointer;
+            margin-top: 5px;
+            transition: .35s;
+        }
+
+        .button:hover {
+            background: #36424F;
+        }
+    </style>
+</head>
+
+<body>
+    <div class="block">
+        <div class='title title--2'>Whoops!</div>
+        <div class='title title--1'>Error 404</div>
+        <div class='content'>
+            <p>Looks like we've had <br> a wardrobe malfunction!</p>
+            <p>We apologise for the inconvenience.</p>
+            <p>Please stay tuned...</p>
+        </div>
+        <div class="button" onclick="window.location.reload()">Try again</div>
+    </div>
+
+</body>
+
+</html>
