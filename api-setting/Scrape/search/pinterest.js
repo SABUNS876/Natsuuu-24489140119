@@ -1,10 +1,9 @@
 const fetch = require('node-fetch');
 
-async function getPinterestImages(query, options = {}) {
+async function getRandomPinterestImage(query, options = {}) {
     const {
-        count = 1,          // Jumlah gambar yang diminta
-        response = null,     // Objek response HTTP (jika di REST API)
-        returnBuffer = true  // Return buffer atau URL
+        returnBuffer = true,
+        response = null
     } = options;
 
     try {
@@ -26,47 +25,31 @@ async function getPinterestImages(query, options = {}) {
         const linkHeader = searchResponse.headers.get("Link");
         if (!linkHeader) throw new Error('Tidak ada gambar ditemukan');
         
-        // 2. Dapatkan semua URL gambar
+        // 2. Dapatkan semua gambar
         const allImageUrls = [...linkHeader.matchAll(/<(.*?)>/g)].map(match => match[1]);
         
-        // 3. Ambil gambar sesuai jumlah yang diminta
-        const selectedUrls = allImageUrls.slice(0, count);
-        const results = [];
-
-        for (const url of selectedUrls) {
-            const imageResponse = await fetch(url);
-            const imageBuffer = await imageResponse.buffer();
-            const mimeType = imageResponse.headers.get('content-type') || 'image/jpeg';
-            
-            results.push({
-                buffer: imageBuffer,
-                url,
-                mimeType
-            });
-        }
-
-        // 4. Return berdasarkan mode penggunaan
+        // 3. Pilih gambar random
+        const randomIndex = Math.floor(Math.random() * allImageUrls.length);
+        const selectedImageUrl = allImageUrls[randomIndex];
+        
+        // 4. Download gambar
+        const imageResponse = await fetch(selectedImageUrl);
+        const imageBuffer = await imageResponse.buffer();
+        const mimeType = imageResponse.headers.get('content-type') || 'image/jpeg';
+        
+        // 5. Return hasil
         if (response) {
-            // Mode REST API (return 1 gambar buffer)
-            response.set('Content-Type', results[0].mimeType);
-            return response.send(results[0].buffer);
+            response.set('Content-Type', mimeType);
+            return response.send(imageBuffer);
         }
-
-        // Mode WhatsApp bot/others (return sesuai permintaan)
-        if (returnBuffer) {
-            return count === 1 ? results[0].buffer : results.map(img => img.buffer);
-        } else {
-            return {
-                success: true,
-                count: results.length,
-                query,
-                images: results.map(img => ({
-                    url: img.url,
-                    mimeType: img.mimeType,
-                    size: img.buffer.length
-                }))
-            };
-        }
+        
+        return returnBuffer ? imageBuffer : {
+            success: true,
+            image: imageBuffer,
+            mimeType,
+            query,
+            imageUrl: selectedImageUrl
+        };
 
     } catch (error) {
         console.error('Error:', error);
@@ -82,4 +65,4 @@ async function getPinterestImages(query, options = {}) {
     }
 }
 
-module.exports = getPinterestImages;
+module.exports = getRandomPinterestImage;
