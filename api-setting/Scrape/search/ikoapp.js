@@ -99,4 +99,7 @@ async function getAnimeDetails(url) {
   }
 }
 
-module.exports = searchAnime;
+module.exports = {
+  searchAnime,
+  getAnimeDetails
+};
