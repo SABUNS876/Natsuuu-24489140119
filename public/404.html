@@ -1,67 +1,110 @@
 <!DOCTYPE html>
 <html lang="id">
+
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>404 - Halaman Tidak Ditemukan</title>
+    <link rel="icon" href="https://files.catbox.moe/anm863.jpg">
+    <link href="https://fonts.googleapis.com/css2?family=Montserrat:wght@400;700&display=swap" rel="stylesheet">
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
-    <link rel="stylesheet" href="/css/style.css">
+    <title>404 - Halaman Tidak Ditemukan</title>
+
     <style>
+        html,
+        body {
+            height: 100%;
+            margin: 0;
+            font-family: 'Montserrat', sans-serif;
+            color: #36424F;
+            background: white;
+        }
+
         .error-page {
             display: flex;
             justify-content: center;
             align-items: center;
             min-height: 100vh;
             text-align: center;
+            padding: 20px;
+            box-sizing: border-box;
         }
-        
+
+        .container {
+            max-width: 600px;
+            margin: 0 auto;
+        }
+
         .error-icon {
             font-size: 4rem;
-            color: var(--primary-light);
+            color: black; /* Warna biru modern */
             margin-bottom: 20px;
         }
-        
-        .error-page h1 {
+
+        h1 {
             font-size: 5rem;
-            margin-bottom: 10px;
+            margin: 10px 0;
+            color: black; /* Warna biru yang sama dengan ikon */
+            font-weight: 700;
+            text-shadow: 2px 2px 4px rgba(0,0,0,0.1);
         }
-        
-        .error-page h2 {
+
+        h2 {
             font-size: 2rem;
             margin-bottom: 20px;
+            color: #2b2d42; /* Warna gelap elegan */
         }
-        
-        .error-page p {
+
+        p {
             margin-bottom: 30px;
-            color: var(--text-secondary);
+            color: #666;
+            line-height: 1.6;
+            max-width: 500px;
+            margin-left: auto;
+            margin-right: auto;
         }
-        
+
         .home-btn {
             display: inline-block;
-            background-color: var(--primary);
+            background-color: black; /* Warna biru yang sama */
             color: white;
-            padding: 12px 24px;
-            border-radius: 4px;
+            padding: 14px 28px;
+            border-radius: 50px; /* Border radius lebih besar */
             text-decoration: none;
-            transition: background-color 0.3s;
+            transition: all 0.3s ease;
             font-weight: bold;
+            border: none;
+            cursor: pointer;
+            font-size: 16px;
+            box-shadow: 0 4px 8px rgba(58, 134, 255, 0.3);
         }
-        
+
         .home-btn:hover {
-            background-color: var(--primary-dark);
+            background-color: black; /* Warna biru lebih gelap saat hover */
+            transform: translateY(-2px);
+            box-shadow: 0 6px 12px black;
         }
-        
+
         @media (max-width: 768px) {
-            .error-page h1 {
+            h1 {
                 font-size: 3rem;
             }
             
-            .error-page h2 {
+            h2 {
                 font-size: 1.5rem;
+            }
+            
+            .error-icon {
+                font-size: 3rem;
+            }
+            
+            .home-btn {
+                padding: 12px 24px;
+                font-size: 14px;
             }
         }
     </style>
 </head>
+
 <body class="error-page">
     <div class="container">
         <div class="error-icon">
@@ -69,8 +112,12 @@
         </div>
         <h1>404</h1>
         <h2>Halaman Tidak Ditemukan</h2>
-        <p>Maaf, halaman yang Anda cari tidak ada atau telah dipindahkan.</p>
+        <p>Maaf, halaman yang Anda cari tidak tersedia atau sedang dalam pemeliharaan. Silakan kembali ke halaman utama atau coba lagi nanti.</p>
         <a href="/" class="home-btn">Kembali ke Beranda</a>
     </div>
+
+    <!-- Font Awesome JS -->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/js/all.min.js"></script>
 </body>
+
 </html>
