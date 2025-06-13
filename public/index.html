@@ -13,6 +13,115 @@
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css"/>
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/animate.css/4.1.1/animate.min.css"/>
     <style>
+        .music-controls {
+  position: fixed;
+  top: 20px;
+  right: 20px;
+  z-index: 1000;
+  transition: transform 0.3s ease, opacity 0.3s ease;
+}
+
+/* Tombol titik tiga */
+.menu-btn {
+  width: 40px;
+  height: 40px;
+  border-radius: 50%;
+  background: rgba(40, 40, 40, 0.9);
+  border: none;
+  color: white;
+  font-size: 20px;
+  cursor: pointer;
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  transition: all 0.3s ease;
+  box-shadow: 0 4px 12px rgba(0,0,0,0.3);
+  margin-left: auto;
+}
+
+.menu-btn:hover {
+  background: #4285F4;
+  transform: rotate(90deg);
+}
+
+/* Daftar lagu */
+.song-list-container {
+  position: absolute;
+  top: 50px;
+  right: 0;
+  max-height: 300px;
+  overflow-y: auto;
+  background: rgba(30, 30, 30, 0.95);
+  border-radius: 12px;
+  padding: 10px;
+  width: 200px;
+  box-shadow: 0 8px 25px rgba(0,0,0,0.4);
+  transform: scale(0.9);
+  transform-origin: top right;
+  opacity: 0;
+  transition: all 0.3s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+  pointer-events: none;
+  z-index: 1001;
+}
+
+.song-list-container.show {
+  transform: scale(1);
+  opacity: 1;
+  pointer-events: all;
+}
+
+/* Scroll daftar lagu */
+.song-list {
+  max-height: 280px;
+  overflow-y: auto;
+  padding-right: 5px;
+}
+
+/* Scrollbar styling */
+.song-list::-webkit-scrollbar {
+  width: 8px;
+}
+
+.song-list::-webkit-scrollbar-track {
+  background: rgba(255,255,255,0.1);
+  border-radius: 4px;
+}
+
+.song-list::-webkit-scrollbar-thumb {
+  background: rgba(255,255,255,0.3);
+  border-radius: 4px;
+}
+
+.song-list::-webkit-scrollbar-thumb:hover {
+  background: rgba(255,255,255,0.5);
+}
+
+/* Item lagu */
+.song-item {
+  padding: 12px;
+  border-radius: 8px;
+  cursor: pointer;
+  transition: all 0.2s;
+  color: #e0e0e0;
+  margin-bottom: 5px;
+}
+
+.song-item:hover {
+  background: rgba(66, 133, 244, 0.3);
+}
+
+.song-item.active {
+  background: rgba(66, 133, 244, 0.5);
+  color: white;
+}
+
+/* Hide saat scroll */
+.music-controls.hide {
+  transform: translateY(-60px);
+  opacity: 0;
+  pointer-events: none;
+        }
+        
 :root {
     --primary-dark: #1a1a2e;
     --primary-color: #16213e;
@@ -797,6 +906,84 @@ body {
 </style>
 </head>
 <body>
+    <div class="music-controls">
+  <audio id="bgMusic" autoplay loop></audio>
+  <div class="song-list-container" id="songListContainer">
+    <div class="song-list" id="songList"></div>
+  </div>
+  <button class="menu-btn" id="menuBtn">⋮</button>
+</div>
+
+  <script>
+    document.addEventListener('DOMContentLoaded', function() {
+  const bgMusic = document.getElementById('bgMusic');
+  const menuBtn = document.getElementById('menuBtn');
+  const songListContainer = document.getElementById('songListContainer');
+  const songList = document.getElementById('songList');
+  const musicControls = document.querySelector('.music-controls');
+
+  // Daftar lagu (sesuaikan dengan file Anda)
+  const songs = [
+    { title: "Damon Vacation", file: "natsu.mp3" },
+    { title: "Yoru Ni Kakeru", file: "natsu1.mp3" },
+    { title: "Pluggnb Jedag - Jedug", file: "natsu2.mp3" }
+  ];
+
+  // Render daftar lagu
+  function renderSongList() {
+    songList.innerHTML = songs.map((song, index) => `
+      <div class="song-item" data-file="${song.file}" onclick="playSong('${song.file}', this)">
+        ${song.title}
+      </div>
+    `).join('');
+  }
+
+  // Play lagu yang dipilih
+  window.playSong = function(songFile, element) {
+    bgMusic.src = songFile;
+    bgMusic.play().catch(e => console.log("Autoplay blocked"));
+    
+    document.querySelectorAll('.song-item').forEach(item => {
+      item.classList.remove('active');
+    });
+    element.classList.add('active');
+    songListContainer.classList.remove('show');
+  };
+
+  // Toggle menu
+  menuBtn.addEventListener('click', function(e) {
+    e.stopPropagation();
+    songListContainer.classList.toggle('show');
+  });
+
+  // Tutup menu saat klik di luar
+  document.addEventListener('click', function(e) {
+    if (!menuBtn.contains(e.target) && !songListContainer.contains(e.target)) {
+      songListContainer.classList.remove('show');
+    }
+  });
+
+  // Hide/show tombol saat scroll
+  let lastScrollY = window.scrollY;
+  window.addEventListener('scroll', function() {
+    const currentScrollY = window.scrollY;
+    if (songListContainer.classList.contains('show')) return;
+
+    if (currentScrollY > lastScrollY && currentScrollY > 50) {
+      musicControls.classList.add('hide');
+    } else {
+      musicControls.classList.remove('hide');
+    }
+    lastScrollY = currentScrollY;
+  });
+
+  // Inisialisasi
+  renderSongList();
+  if (songs.length > 0) {
+    playSong(songs[0].file, document.querySelector('.song-item'));
+  }
+});
+  </script>
     <!-- Floating Particles Background -->
     <div class="particles" id="particles"></div>
     
