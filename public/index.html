@@ -13,6 +13,21 @@
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css"/>
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/animate.css/4.1.1/animate.min.css"/>
     <style>
+        .search-input {
+  width: 90%;
+  padding: 8px 12px;
+  margin: 10px auto;
+  display: block;
+  border: 1px solid #ddd;
+  border-radius: 20px;
+  outline: none;
+  font-size: 14px;
+}
+
+.search-input:focus {
+  border-color: #4CAF50;
+}
+        
 .music-controls {
   position: fixed;
   top: 20px;
@@ -908,6 +923,11 @@ body {
   <button class="menu-btn" id="menuBtn">⋮</button>
 </div>
 
+    <div id="songListContainer">
+  <input type="text" id="searchInput" placeholder="Cari lagu..." class="search-input">
+  <div id="songList"></div>
+    </div>
+
   <script>
   document.addEventListener('DOMContentLoaded', function() {
     const bgMusic = document.getElementById('bgMusic');
@@ -915,8 +935,9 @@ body {
     const songListContainer = document.getElementById('songListContainer');
     const songList = document.getElementById('songList');
     const musicControls = document.querySelector('.music-controls');
+    const searchInput = document.getElementById('searchInput'); // Tambahkan input search
 
-    // Hayoo Mau Ngepain
+    // Daftar lagu
     const songs = [
       { title: "Damon Vacation", url: "https://c.termai.cc/a89/65%E7%81%84sem" },
       { title: "Somewhere Only We Know", url: "https://c.termai.cc/a68/44諕x" },
@@ -934,14 +955,43 @@ body {
       { title: "Starboy - Speed Up", url:"https://files.catbox.moe/8gs7l1.mp3" }
     ];
 
-    // Render Lagu
-    function renderSongList() {
-      songList.innerHTML = songs.map((song, index) => `
+    // Fungsi untuk memfilter lagu berdasarkan pencarian
+    function filterSongs(searchTerm) {
+      return songs.filter(song => 
+        song.title.toLowerCase().includes(searchTerm.toLowerCase())
+      );
+    }
+
+    // Render daftar lagu dengan atau tanpa filter
+    function renderSongList(filteredSongs = null) {
+      const songsToRender = filteredSongs || songs;
+      songList.innerHTML = songsToRender.map((song, index) => `
         <div class="song-item" data-url="${song.url}" onclick="playSong('${song.url}', this)">
           ${song.title}
         </div>
       `).join('');
+      
+      // Set active song jika ada
+      const activeUrl = bgMusic.src;
+      if (activeUrl) {
+        document.querySelectorAll('.song-item').forEach(item => {
+          if (item.getAttribute('data-url') === activeUrl) {
+            item.classList.add('active');
+          }
+        });
+      }
     }
+
+    // Event listener untuk search input
+    searchInput.addEventListener('input', function(e) {
+      const searchTerm = e.target.value.trim();
+      if (searchTerm.length > 0) {
+        const filteredSongs = filterSongs(searchTerm);
+        renderSongList(filteredSongs);
+      } else {
+        renderSongList();
+      }
+    });
 
     // Play lagu yang dipilih
     window.playSong = function(songUrl, element) {
@@ -955,11 +1005,17 @@ body {
       songListContainer.classList.remove('show');
     };
 
+    // Toggle menu
     menuBtn.addEventListener('click', function(e) {
       e.stopPropagation();
       songListContainer.classList.toggle('show');
+      // Fokus ke search input ketika menu dibuka
+      if (songListContainer.classList.contains('show')) {
+        searchInput.focus();
+      }
     });
 
+    // Tutup menu saat klik di luar
     document.addEventListener('click', function(e) {
       if (!menuBtn.contains(e.target) && !songListContainer.contains(e.target)) {
         songListContainer.classList.remove('show');
