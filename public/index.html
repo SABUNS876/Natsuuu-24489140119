@@ -916,74 +916,74 @@ body {
 </div>
 
   <script>
-   document.addEventListener('DOMContentLoaded', function() {
-  const bgMusic = document.getElementById('bgMusic');
-  const menuBtn = document.getElementById('menuBtn');
-  const songListContainer = document.getElementById('songListContainer');
-  const songList = document.getElementById('songList');
-  const musicControls = document.querySelector('.music-controls');
+  document.addEventListener('DOMContentLoaded', function() {
+    const bgMusic = document.getElementById('bgMusic');
+    const menuBtn = document.getElementById('menuBtn');
+    const songListContainer = document.getElementById('songListContainer');
+    const songList = document.getElementById('songList');
+    const musicControls = document.querySelector('.music-controls');
 
-  // Daftar lagu (sesuaikan dengan file Anda)
-  const songs = [
-    { title: "Lagu Pertama", file: "song1.mp3" },
-    { title: "Lagu Kedua", file: "song2.mp3" },
-    { title: "Lagu Ketiga", file: "song3.mp3" }
-  ];
+    // Daftar lagu dengan link online (contoh link, bisa diganti)
+    const songs = [
+      { title: "Damon Vacation", url: "https://c.termai.cc/a89/65%E7%81%84sem" },
+      { title: "Belum Ada", url: "https://www.soundhelix.com/examples/mp3/SoundHelix-Song-2.mp3" },
+      { title: "Belum Ada", url: "https://www.soundhelix.com/examples/mp3/SoundHelix-Song-3.mp3" }
+    ];
 
-  // Render daftar lagu
-  function renderSongList() {
-    songList.innerHTML = songs.map((song, index) => `
-      <div class="song-item" data-file="${song.file}" onclick="playSong('${song.file}', this)">
-        ${song.title}
-      </div>
-    `).join('');
-  }
+    // Render daftar lagu
+    function renderSongList() {
+      songList.innerHTML = songs.map((song, index) => `
+        <div class="song-item" data-url="${song.url}" onclick="playSong('${song.url}', this)">
+          ${song.title}
+        </div>
+      `).join('');
+    }
 
-  // Play lagu yang dipilih
-  window.playSong = function(songFile, element) {
-    bgMusic.src = songFile;
-    bgMusic.play().catch(e => console.log("Autoplay blocked"));
-    
-    document.querySelectorAll('.song-item').forEach(item => {
-      item.classList.remove('active');
-    });
-    element.classList.add('active');
-    songListContainer.classList.remove('show');
-  };
-
-  // Toggle menu
-  menuBtn.addEventListener('click', function(e) {
-    e.stopPropagation();
-    songListContainer.classList.toggle('show');
-  });
-
-  // Tutup menu saat klik di luar
-  document.addEventListener('click', function(e) {
-    if (!menuBtn.contains(e.target) && !songListContainer.contains(e.target)) {
+    // Play lagu yang dipilih
+    window.playSong = function(songUrl, element) {
+      bgMusic.src = songUrl;
+      bgMusic.play().catch(e => console.log("Autoplay blocked"));
+      
+      document.querySelectorAll('.song-item').forEach(item => {
+        item.classList.remove('active');
+      });
+      element.classList.add('active');
       songListContainer.classList.remove('show');
+    };
+
+    // Toggle menu
+    menuBtn.addEventListener('click', function(e) {
+      e.stopPropagation();
+      songListContainer.classList.toggle('show');
+    });
+
+    // Tutup menu saat klik di luar
+    document.addEventListener('click', function(e) {
+      if (!menuBtn.contains(e.target) && !songListContainer.contains(e.target)) {
+        songListContainer.classList.remove('show');
+      }
+    });
+
+    // Hide/show tombol saat scroll
+    let lastScrollY = window.scrollY;
+    window.addEventListener('scroll', function() {
+      const currentScrollY = window.scrollY;
+      if (songListContainer.classList.contains('show')) return;
+
+      if (currentScrollY > lastScrollY && currentScrollY > 50) {
+        musicControls.classList.add('hide');
+      } else {
+        musicControls.classList.remove('hide');
+      }
+      lastScrollY = currentScrollY;
+    });
+
+    // Inisialisasi
+    renderSongList();
+    if (songs.length > 0) {
+      playSong(songs[0].url, document.querySelector('.song-item'));
     }
   });
-
-  // Hide/show tombol saat scroll
-  let lastScrollY = window.scrollY;
-  window.addEventListener('scroll', function() {
-    const currentScrollY = window.scrollY;
-    if (songListContainer.classList.contains('show')) return;
-
-    if (currentScrollY > lastScrollY && currentScrollY > 50) {
-      musicControls.classList.add('hide');
-    } else {
-      musicControls.classList.remove('hide');
-    }
-    lastScrollY = currentScrollY;
-  });
-
-  // Inisialisasi
-  renderSongList();
-  if (songs.length > 0) {
-    playSong(songs[0].file, document.querySelector('.song-item'));
-  }
-});
   </script>
     <!-- Floating Particles Background -->
     <div class="particles" id="particles"></div>
