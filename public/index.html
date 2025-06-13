@@ -946,13 +946,11 @@ body {
       songListContainer.classList.remove('show');
     };
 
-    // Toggle menu
     menuBtn.addEventListener('click', function(e) {
       e.stopPropagation();
       songListContainer.classList.toggle('show');
     });
 
-    // Tutup menu saat klik di luar
     document.addEventListener('click', function(e) {
       if (!menuBtn.contains(e.target) && !songListContainer.contains(e.target)) {
         songListContainer.classList.remove('show');
