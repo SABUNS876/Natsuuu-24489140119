@@ -14,12 +14,12 @@
     {
       "url": "#documentation",
       "name": "Get Api",
-      "icon": "rocket"
+      "icon": "home"
     },
     {
       "url": "https://whatsapp.com/channel/0029Vb3VN23ElagsQGXbMc0n",
       "name": "My Channel",
-      "icon": "layer-group"
+      "icon": "bell"
     },
     {
       "url": "https://wa.me/62881011040349",
@@ -29,7 +29,7 @@
     {
       "url": "https://chat.whatsapp.com/EG4L7JIyCVVEiAv9wbQMnc",
       "name": "Group Chat",
-      "icon": "check_circle"
+      "icon": "message"
     }
   ],
   "categories": [
