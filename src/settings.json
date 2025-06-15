@@ -293,6 +293,13 @@
       "name": "Tools",
       "items": [
         {
+          "name": "Upscale Image",
+          "desc": "Buat Foto Mu Menjadi Jernih",
+          "path": "/tools/upscale?url",
+          "status": "ready",
+          "requireKey": false
+        },
+        {
           "name": "Screenshot Website",
           "desc": "Screenshot web mu",
           "path": "/tools/ssweb?url",
