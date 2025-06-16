@@ -37,13 +37,6 @@
       "name": "Search",
       "items": [
         {
-          "name": "Yandex Search",
-          "desc": "Search Di Yandex",
-          "path": "/search/yandex?q=",
-          "status": "ready",
-          "requireKey": false
-        },
-          {
           "name": "Ikoapp Search",
           "desc": "Search Anime Menggunakan Ikoapp",
           "path": "/search/ikoapp?q=",
