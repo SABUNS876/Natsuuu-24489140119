@@ -294,7 +294,7 @@
       "items": [
         {
           "name": "Generator Vcc",
-          "desc": "Buat Vcc Mu cuma ada 4 harus pakai huruf kecil semua",
+          "desc": "Buat Vcc Mu cuma ada 4 harus pakai huruf kecil semua, ada visa, mastercard, americanexpress dan jcb itu semua harus pakai huruf kecil",
           "path": "/tools/genvcc?type=&count=",
           "status": "ready",
           "requireKey": false
