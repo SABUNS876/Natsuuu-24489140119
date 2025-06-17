@@ -2,47 +2,56 @@ const axios = require('axios');
 
 const typecard = ["visa", "americanexpress", "mastercard", "jcb"];
 
-function genvccRouter(app) {
-  app.get('/tools/genvcc', async (req, res) => {
-    let { type, count = "5" } = req.query;
+async function generateCreditCards(type, count = "5") {
+  // Validasi tipe kartu
+  if (!typecard.includes(type)) {
+    throw {
+      status: false,
+      message: "Type is invalid!",
+      available_types: typecard
+    };
+  }
 
-    if (!typecard.includes(type)) {
-      return res.status(400).json({
-        status: false,
-        message: "Type is invalid!",
-        available_types: typecard
-      });
-    }
+  // Mapping tipe kartu
+  const typeMapping = {
+    'visa': "Visa",
+    'mastercard': "Mastercard",
+    'americanexpress': "American%20Express",
+    'jcb': "JCB"
+  };
+  
+  const typeds = typeMapping[type];
+  if (!typeds) {
+    throw {
+      status: false,
+      message: "Invalid card type"
+    };
+  }
 
-    let typeds;
-    switch (type) {
-      case 'visa': typeds = "Visa"; break;
-      case 'mastercard': typeds = "Mastercard"; break;
-      case 'americanexpress': typeds = "American%20Express"; break;
-      case 'jcb': typeds = "JCB"; break;
-      default: return res.status(400).json({ status: false, message: "Invalid card type" });
-    }
+  try {
+    const response = await axios.get('https://backend.lambdatest.com/api/dev-tools/credit-card-generator', {
+      params: { 
+        type: typeds, 
+        'no-of-cards': count 
+      },
+      timeout: 10000
+    });
 
-    try {
-      const response = await axios.get('https://backend.lambdatest.com/api/dev-tools/credit-card-generator', {
-        params: { type: typeds, 'no-of-cards': count }
-      });
+    return {
+      status: true,
+      creator: 'natsu',
+      count: count,
+      data: response.data
+    };
 
-      res.json({
-        status: true,
-        creator: 'natsu',
-        count: count,
-        data: response.data
-      });
-
-    } catch (err) {
-      res.status(500).json({
-        status: false,
-        message: "Error fetching data",
-        error: err.message
-      });
-    }
-  });
+  } catch (err) {
+    console.error('API Error:', err.message);
+    throw {
+      status: false,
+      message: "Error fetching data from generator API",
+      error: err.message
+    };
+  }
 }
 
-module.exports = genvccRouter;
+module.exports = generateCreditCards;
