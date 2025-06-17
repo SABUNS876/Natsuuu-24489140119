@@ -45,10 +45,10 @@ async function generateCreditCards(type, count = "5") {
     };
 
   } catch (err) {
-    console.error('API Error:', err.message);
-    throw {
+    console.error('API Error:', err);
+    res.status(500).json({
       status: false,
-      message: "Error fetching data from generator API",
+      message: "Memakai Huruf Kecil Contoh visa ada 4 pilihan visa, mastercard, americanexpress dan cjb. semuanya memakai huruf kecil",
       error: err.message
     };
   }
