@@ -1,67 +1,97 @@
 const axios = require("axios");
+const FormData = require('form-data');
 
 async function animegen(prompt) {
     try {
+        // First try the new API endpoint
+        const form = new FormData();
+        form.append('prompt', prompt);
+        form.append('style', 'anime');
+        form.append('quality', 'high');
+
         const res = await axios.post(
-            "https://ghibliart.net/api/generate-image", {
-                prompt
-            }, {
+            "https://ai-image-generator-api.vercel.app/api/generate",
+            form,
+            {
                 headers: {
-                    "accept": "*/*",
-                    "accept-language": "id-ID,id;q=0.9,en-US;q=0.8,en;q=0.7",
-                    "content-type": "application/json",
-                    "origin": "https://ghibliart.net",
-                    "referer": "https://ghibliart.net/",
-                    "user-agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/135.0.0.0 Safari/537.36",
-                    "cookie": "_ga_DC0LTNHRKH=GS2.1.s1748942966$o1$g0$t1748942966$j60$l0$h0; _ga=GA1.1.1854864196.1748942966",
-                    "sec-ch-ua": '"Google Chrome";v="135", "Not-A.Brand";v="8", "Chromium";v="135"',
+                    ...form.getHeaders(),
+                    "accept": "application/json",
+                    "user-agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/125.0.0.0 Safari/537.36",
+                    "sec-ch-ua": '"Chromium";v="125", "Not.A/Brand";v="24"',
                     "sec-ch-ua-mobile": "?0",
                     "sec-ch-ua-platform": '"Windows"',
-                    "sec-fetch-dest": "empty",
-                    "sec-fetch-mode": "cors",
-                    "sec-fetch-site": "same-origin",
+                    "origin": "https://ai-image-generator.com",
+                    "referer": "https://ai-image-generator.com/",
                     "priority": "u=1, i"
-                }
+                },
+                timeout: 30000
             }
         );
 
-        const img = res.data?.image || res.data?.url;
-
-        if (!img) {
-            throw new Error("Gagal mendapatkan gambar dari API");
+        // Fallback to alternative API if first one fails
+        if (!res.data?.image_url && !res.data?.image) {
+            return await fallbackGenerator(prompt);
         }
 
-        let imageBuffer;
-        let contentType = 'image/jpeg'; // Default content type
-
-        if (img.startsWith("data:image/")) {
-            // Handle base64 image
-            const matches = img.match(/^data:(image\/\w+);base64,/);
-            if (matches) contentType = matches[1];
-            const base64Data = img.replace(/^data:image\/\w+;base64,/, "");
-            imageBuffer = Buffer.from(base64Data, "base64");
-        } else if (img.startsWith("iVBORw")) {
-            // Handle raw base64 without prefix
-            imageBuffer = Buffer.from(img, "base64");
-        } else {
-            // Handle image URL
-            const imgResponse = await axios.get(img, {
-                responseType: 'arraybuffer'
-            });
-            imageBuffer = Buffer.from(imgResponse.data, 'binary');
-            contentType = imgResponse.headers['content-type'] || contentType;
-        }
+        const imgUrl = res.data?.image_url || res.data?.image;
+        
+        // Download the generated image
+        const imageResponse = await axios.get(imgUrl, {
+            responseType: 'arraybuffer',
+            timeout: 20000
+        });
 
         return {
-            imageBuffer,
-            contentType,
+            imageBuffer: Buffer.from(imageResponse.data, 'binary'),
+            contentType: imageResponse.headers['content-type'] || 'image/png',
             prompt,
-            note: 'Gambar langsung dikirim sebagai buffer'
+            source: 'ai-image-generator-api',
+            note: 'Generated with new API endpoint'
         };
 
     } catch (err) {
-        console.error("Error:", err.message);
-        throw new Error(`Gagal memproses gambar: ${err.message}`);
+        console.error("Primary API error:", err.message);
+        // Try fallback if main API fails
+        return await fallbackGenerator(prompt);
+    }
+}
+
+async function fallbackGenerator(prompt) {
+    try {
+        // Alternative API endpoint
+        const res = await axios.post(
+            "https://anime-gen-backup.herokuapp.com/generate",
+            { prompt },
+            {
+                headers: {
+                    "content-type": "application/json",
+                    "user-agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/125.0.0.0 Safari/537.36",
+                    "accept": "application/json"
+                },
+                timeout: 25000
+            }
+        );
+
+        if (!res.data?.url) {
+            throw new Error("No image URL in fallback response");
+        }
+
+        const imageResponse = await axios.get(res.data.url, {
+            responseType: 'arraybuffer',
+            timeout: 15000
+        });
+
+        return {
+            imageBuffer: Buffer.from(imageResponse.data, 'binary'),
+            contentType: imageResponse.headers['content-type'] || 'image/jpeg',
+            prompt,
+            source: 'anime-gen-backup',
+            note: 'Generated with fallback API'
+        };
+
+    } catch (fallbackErr) {
+        console.error("Fallback API error:", fallbackErr.message);
+        throw new Error(`All generation methods failed: ${fallbackErr.message}`);
     }
 }
 
