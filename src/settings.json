@@ -294,7 +294,7 @@
       "items": [
         {
           "name": "Generator Vcc",
-          "desc": "Buat Vcc Mu",
+          "desc": "Buat Vcc Mu cuma ada 5 harus pakai huruf kecil semua",
           "path": "/tools/genvcc?type=&count=",
           "status": "ready",
           "requireKey": false
