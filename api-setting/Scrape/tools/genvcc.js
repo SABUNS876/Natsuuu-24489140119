@@ -50,7 +50,7 @@ async function generateCreditCards(type, count = "5") {
       status: false,
       message: "Memakai Huruf Kecil Contoh visa ada 4 pilihan visa, mastercard, americanexpress dan cjb. semuanya memakai huruf kecil",
       error: err.message
-    };
+    });
   }
 }
 
