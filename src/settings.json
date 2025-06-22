@@ -180,6 +180,13 @@
       "name": "AI Tools",
       "items": [
         {
+          "name": "Img2Img",
+          "desc": "Edit Fotomu Menggunakan Prompt",
+          "path": "/ai/img2img?url=&prompt=",
+          "status": "ready",
+          "requireKey": false
+        },
+        {
           "name": "Ghibli",
           "desc": "Ubah Text Mu Ke Ghibli",
           "path": "/ai/ghibli?prompt=",
