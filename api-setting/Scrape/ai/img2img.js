@@ -1,69 +1,26 @@
 const axios = require('axios');
-const FormData = require('form-data');
 
-async function editImageBuffer(imageBuffer, prompt, strength = 0.7) {
-  // Validate inputs
-  if (!Buffer.isBuffer(imageBuffer)) {
-    return {
-      status: false,
-      message: 'Image must be provided as Buffer'
-    };
-  }
-
-  if (!prompt || typeof prompt !== 'string') {
-    return {
-      status: false,
-      message: 'Prompt must be a valid string'
-    };
-  }
+async function editImageFromUrl(imageUrl, prompt) {
+  const payload = {
+    image_url: imageUrl,
+    prompt,
+    model_id: 'asyncsMIX_v7',
+    samples: 1,
+    height: 768,
+    width: 512,
+    negative_prompt: 'painting, extra fingers, mutated hands, poorly drawn hands, poorly drawn face, deformed, ugly, blurry, bad anatomy, bad proportions, extra limbs, cloned face, skinny, glitchy, double torso, extra arms, extra hands, mangled fingers, missing lips, ugly face, distorted face, extra legs, anime',
+    seed: -1,
+    lora_ids: '',
+    lora_weight: '0.7',
+    sampler: 'Euler a',
+    steps: 25,
+    guidance: 7,
+    clip_skip: 2,
+    strength: 0.7
+  };
 
   try {
-    // 1. Upload the image to get a temporary URL
-    const formData = new FormData();
-    formData.append('image', imageBuffer, {
-      filename: 'input.jpg',
-      contentType: 'image/jpeg'
-    });
-
-    const uploadResponse = await axios.post(
-      'https://api.arting.ai/api/upload', // Replace with actual upload endpoint
-      formData,
-      {
-        headers: {
-          ...formData.getHeaders(),
-          'Content-Length': formData.getLengthSync()
-        }
-      }
-    );
-
-    const tempImageUrl = uploadResponse.data.url;
-    if (!tempImageUrl) {
-      return {
-        status: false,
-        message: 'Failed to upload image'
-      };
-    }
-
-    // 2. Prepare edit payload
-    const payload = {
-      image_url: tempImageUrl,
-      prompt,
-      model_id: 'asyncsMIX_v7',
-      samples: 1,
-      height: 768,
-      width: 512,
-      negative_prompt: 'painting, extra fingers, mutated hands, poorly drawn hands, poorly drawn face, deformed, ugly, blurry, bad anatomy, bad proportions, extra limbs, cloned face, skinny, glitchy, double torso, extra arms, extra hands, mangled fingers, missing lips, ugly face, distorted face, extra legs, anime',
-      seed: -1,
-      lora_ids: '',
-      lora_weight: '0.7',
-      sampler: 'Euler a',
-      steps: 25,
-      guidance: 7,
-      clip_skip: 2,
-      strength: Math.min(Math.max(strength, 0.1), 0.9)
-    };
-
-    // 3. Request image editing
+    // 1. Request edit gambar
     const { data: createRes } = await axios.post(
       'https://api.arting.ai/api/cg/image-to-image/create',
       payload,
@@ -74,17 +31,17 @@ async function editImageBuffer(imageBuffer, prompt, strength = 0.7) {
     if (!requestId) {
       return {
         status: false,
-        message: 'Failed to get request ID from API'
+        message: 'Gagal mendapatkan request ID'
       };
     }
 
-    // 4. Poll for result
+    // 2. Polling hasil
     let retries = 0;
-    let editedImageBuffer = null;
+    let resultBuffer = null;
     const maxRetries = 15;
     const retryDelay = 3000;
 
-    while (retries < maxRetries && !editedImageBuffer) {
+    while (retries < maxRetries && !resultBuffer) {
       await new Promise(res => setTimeout(res, retryDelay));
 
       const { data: getRes } = await axios.post(
@@ -93,39 +50,39 @@ async function editImageBuffer(imageBuffer, prompt, strength = 0.7) {
         { headers: { 'Content-Type': 'application/json' } }
       );
 
-      const output = getRes?.data?.output;
-      if (output && output.length) {
-        // Download the edited image directly to buffer
-        const imageResponse = await axios.get(output[0], {
+      const outputUrl = getRes?.data?.output?.[0];
+      if (outputUrl) {
+        // 3. Download langsung sebagai buffer
+        const imageResponse = await axios.get(outputUrl, {
           responseType: 'arraybuffer'
         });
-        editedImageBuffer = Buffer.from(imageResponse.data, 'binary');
+        resultBuffer = Buffer.from(imageResponse.data, 'binary');
         break;
       }
       retries++;
     }
 
-    if (!editedImageBuffer) {
+    if (!resultBuffer) {
       return {
         status: false,
-        message: 'Failed to get edited image after retries'
+        message: 'Gagal mendapatkan hasil edit setelah beberapa percobaan'
       };
     }
 
     return {
       status: true,
-      imageBuffer: editedImageBuffer,
-      contentType: 'image/jpeg', // or detect from response
-      prompt: prompt
+      imageBuffer: resultBuffer,
+      contentType: 'image/jpeg', // atau ambil dari header response
+      promptUsed: prompt
     };
 
   } catch (error) {
-    console.error('Image editing error:', error);
+    console.error('Error:', error);
     return {
       status: false,
-      message: error.response?.data?.message || error.message || 'Image editing failed'
+      message: error.message || 'Terjadi kesalahan saat mengedit gambar'
     };
   }
 }
 
-module.exports = editImageBuffer;
+module.exports = editImageFromUrl;
