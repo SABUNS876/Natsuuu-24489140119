@@ -297,13 +297,6 @@
           "requireKey": false
         },
         {
-          "name": "Upscale Image",
-          "desc": "Buat Foto Mu Menjadi Jernih",
-          "path": "/tools/upscale?url",
-          "status": "ready",
-          "requireKey": false
-        },
-        {
           "name": "Screenshot Website",
           "desc": "Screenshot web mu",
           "path": "/tools/ssweb?url",
@@ -314,13 +307,6 @@
           "name": "Brat Foto",
           "desc": "Buat Gambar Brat Sesuai Kriteria Mu",
           "path": "/tools/brat?text",
-          "status": "ready",
-          "requireKey": false
-        },
-        {
-          "name": "Remini Images",
-          "desc": "Ubah Foto Mu Menjadi Menarik",
-          "path": "/tools/remini?url=",
           "status": "ready",
           "requireKey": false
         },
