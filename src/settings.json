@@ -333,6 +333,13 @@
       "name": "Roblox",
       "items": [
         {
+          "name": "Stalk Roblox",
+          "desc": "Search akun roblox",
+          "path": "/roblox/stalk",
+          "status": "ready",
+          "requireKey": false
+        },
+        {
           "name": "Grow A Garden",
           "desc": "Cek Stock Grow A Garden",
           "path": "/roblox/gag",
