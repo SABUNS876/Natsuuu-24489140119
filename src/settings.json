@@ -170,6 +170,13 @@
       "name": "AI Tools",
       "items": [
         {
+          "name": "Ghibli Generator",
+          "desc": "Buat prompt mu menjadi ghibli",
+          "path": "/ai/ghibli?prompt=",
+          "status": "ready",
+          "requireKey": false
+        },
+        {
           "name": "Prompt To Anime",
           "desc": "Ubah Prompt muenjadi anime",
           "path": "/ai/txt2anime?prompt=",
