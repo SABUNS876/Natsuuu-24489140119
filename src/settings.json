@@ -223,6 +223,13 @@
       "name": "Random",
       "items": [
         {
+          "name": "BlueArchive",
+          "desc": "Random Characters BlueArchive",
+          "path": "/random/ba",
+          "status": "ready",
+          "requireKey": false
+        },
+        {
           "name": "DDoS",
           "desc": "Attack Web Dan Musnahkan Web Tersebut",
           "path": "/random/ddos?url=&duration=",
