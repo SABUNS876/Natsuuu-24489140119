@@ -170,6 +170,13 @@
       "name": "AI Tools",
       "items": [
         {
+          "name": "Prompt To Anime",
+          "desc": "Ubah Prompt muenjadi anime",
+          "path": "/ai/txt2anime?prompt=",
+          "status": "ready",
+          "requireKey": false
+        },
+        {
           "name": "Gpt 4.1 Nano",
           "desc": "Chat Dengan GPT 4.1 Nano",
           "path": "/ai/gpt-4-1-nano?prompt=",
