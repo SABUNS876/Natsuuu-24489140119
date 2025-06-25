@@ -163,16 +163,6 @@
           "params": {
             "id": "masukkan id free fire"
           }
-        },
-        {
-          "name": "Instagram Stalk",
-          "desc": "Stalker Instagram Via Username",
-          "path": "/stalker/igstalk?username=",
-          "status": "ready",
-          "requireKey": false,
-          "params": {
-            "username": "Username tanpa @"
-          }
         }
       ]
     },
