@@ -2,72 +2,110 @@ const axios = require('axios');
 const FormData = require('form-data');
 const fs = require('fs');
 
-async function imglarger(buffer, options = {}) {
+async function imgLarger(input, options = {}, req, res) {
     const { scale = '2', type = 'upscale' } = options;
     
     const config = {
         scales: ['2', '4'],
         types: { upscale: 13, enhance: 2, sharpener: 1 }
     };
-    
-    if (!Buffer.isBuffer(buffer)) throw new Error('Image buffer is required');
-    if (!config.types[type]) throw new Error(`Available types: ${Object.keys(config.types).join(', ')}`);
-    if (type === 'upscale' && !config.scales.includes(scale.toString())) throw new Error(`Available scales: ${config.scales.join(', ')}`);
+
+    // Handle both direct call and API call
+    const isApiCall = req && res;
     
     try {
+        // Validate input
+        if (!input) {
+            const error = new Error('Image input is required (buffer, file path, or URL)');
+            if (isApiCall) {
+                return res.status(400).json({ status: false, message: error.message });
+            }
+            throw error;
+        }
+
+        if (!config.types[type]) {
+            const error = new Error(`Available types: ${Object.keys(config.types).join(', ')}`);
+            if (isApiCall) {
+                return res.status(400).json({ status: false, message: error.message });
+            }
+            throw error;
+        }
+
+        // Process image input
+        let imageBuffer;
+        if (Buffer.isBuffer(input)) {
+            imageBuffer = input;
+        } else if (typeof input === 'string') {
+            if (input.startsWith('http')) {
+                const response = await axios.get(input, { responseType: 'arraybuffer' });
+                imageBuffer = Buffer.from(response.data, 'binary');
+            } else {
+                imageBuffer = fs.readFileSync(input);
+            }
+        } else {
+            const error = new Error('Invalid input type - must be buffer, file path, or URL');
+            if (isApiCall) {
+                return res.status(400).json({ status: false, message: error.message });
+            }
+            throw error;
+        }
+
+        // Upload and process image
         const form = new FormData();
-        form.append('file', buffer, `rynn_${Date.now()}.jpg`);
+        form.append('file', imageBuffer, `img_${Date.now()}.jpg`);
         form.append('type', config.types[type].toString());
         if (!['sharpener'].includes(type)) form.append('scaleRadio', type === 'upscale' ? scale.toString() : '1');
-        
-        const { data: p } = await axios.post('https://photoai.imglarger.com/api/PhoAi/Upload', form, {
-            headers: {
-                ...form.getHeaders(),
-                accept: 'application/json, text/plain, */*',
-                origin: 'https://imglarger.com',
-                referer: 'https://imglarger.com/',
-                'user-agent': 'Mozilla/5.0 (Linux; Android 10; K) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/137.0.0.0 Mobile Safari/537.36'
-            }
+
+        const { data: uploadResponse } = await axios.post('https://photoai.imglarger.com/api/PhoAi/Upload', form, {
+            headers: form.getHeaders()
         });
-        if (!p.data.code) throw new Error('Upload failed - no code received');
-        
-        while (true) {
-            const { data: r } = await axios.post('https://photoai.imglarger.com/api/PhoAi/CheckStatus', {
-                code: p.data.code,
-                type: config.types[type]
-            }, {
-                headers: {
-                    accept: 'application/json, text/plain, */*',
-                    'content-type': 'application/json',
-                    origin: 'https://imglarger.com',
-                    referer: 'https://imglarger.com/',
-                    'user-agent': 'Mozilla/5.0 (Linux; Android 10; K) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/137.0.0.0 Mobile Safari/537.36'
-                }
-            });
-            
-            if (r.data.status === 'waiting') continue;
-            if (r.data.status === 'success') return r.data.downloadUrls[0];
-            await new Promise(res => setTimeout(res, 5000));
+
+        if (!uploadResponse.data?.code) {
+            const error = new Error('Upload failed - no code received');
+            if (isApiCall) {
+                return res.status(500).json({ status: false, message: error.message });
+            }
+            throw error;
         }
-        
+
+        // Check processing status
+        while (true) {
+            const { data: statusResponse } = await axios.post('https://photoai.imglarger.com/api/PhoAi/CheckStatus', {
+                code: uploadResponse.data.code,
+                type: config.types[type]
+            });
+
+            if (statusResponse.data.status === 'success') {
+                const result = {
+                    status: true,
+                    downloadUrl: statusResponse.data.downloadUrls[0]
+                };
+                if (isApiCall) {
+                    return res.json(result);
+                }
+                return result;
+            }
+            
+            if (statusResponse.data.status === 'error') {
+                const error = new Error('Processing failed');
+                if (isApiCall) {
+                    return res.status(500).json({ status: false, message: error.message });
+                }
+                throw error;
+            }
+            
+            await new Promise(resolve => setTimeout(resolve, 5000));
+        }
     } catch (error) {
-        console.error(error.message);
-        throw new Error(error.message);
+        if (isApiCall) {
+            return res.status(500).json({ 
+                status: false, 
+                message: error.message 
+            });
+        }
+        throw error;
     }
 }
 
-// Example usage (wrapped in async function since top-level await isn't available in CJS)
-async function test() {
-    try {
-        const imageBuffer = fs.readFileSync('./image.jpg');
-        const result = await imglarger(imageBuffer, { scale: '4' });
-        console.log('Enhanced image URL:', result);
-    } catch (error) {
-        console.error('Error:', error.message);
-    }
-}
-
-// Uncomment to run test
-// test();
-
-module.exports = imglarger;
+// Dual-purpose export
+module.exports = imgLarger;
