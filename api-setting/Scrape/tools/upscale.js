@@ -1,79 +1,73 @@
 const axios = require('axios');
 const FormData = require('form-data');
+const fs = require('fs');
 
-async function upscaleImage(imgUrl, response = null) {
-  try {
-    // 1. Validate input URL
-    if (!imgUrl || !imgUrl.startsWith('http')) {
-      throw new Error('Invalid image URL');
-    }
-
-    // 2. Download original image
-    const imgResponse = await axios.get(imgUrl, {
-      responseType: 'arraybuffer',
-      timeout: 10000,
-      headers: {
-        'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36'
-      }
-    });
-
-    // 3. Prepare upscale request
-    const form = new FormData();
-    form.append('image', imgResponse.data, {
-      filename: `source_${Date.now()}.${imgUrl.split('.').pop().split('?')[0] || 'jpg'}`,
-      contentType: imgResponse.headers['content-type'] || 'image/jpeg'
-    });
-    form.append('scale', '2');
-
-    // 4. Send to upscale API
-    const { data, headers } = await axios.post(
-      'https://api2.pixelcut.app/image/upscale/v1',
-      form,
-      {
-        headers: {
-          ...form.getHeaders(),
-          'X-Client-Version': 'web',
-          'X-Locale': 'id',
-          'Accept': 'application/json'
-        },
-        responseType: 'arraybuffer', // Critical for binary response
-        timeout: 30000
-      }
-    );
-
-    // 5. Handle response
-    const contentType = headers['content-type'] || 'image/jpeg';
-    const upscaledBuffer = Buffer.from(data);
-
-    if (response) {
-      // Stream image directly to HTTP response
-      response.setHeader('Content-Type', contentType);
-      response.setHeader('Content-Disposition', `inline; filename="upscaled_${Date.now()}.${contentType.split('/')[1] || 'jpg'}"`);
-      response.setHeader('Cache-Control', 'no-store');
-      return response.end(upscaledBuffer);
-    }
-
-    return upscaledBuffer;
-
-  } catch (error) {
-    console.error('Upscale error:', error.message);
+async function imglarger(buffer, options = {}) {
+    const { scale = '2', type = 'upscale' } = options;
     
-    if (response) {
-      response.status(500).json({
-        status: 'error',
-        message: 'Failed to upscale image',
-        error: error.message,
-        tips: [
-          'Pastikan URL gambar valid',
-          'Coba gambar dengan ukuran lebih kecil',
-          'Server upscale mungkin sedang down'
-        ]
-      });
-      return;
-    }
+    const config = {
+        scales: ['2', '4'],
+        types: { upscale: 13, enhance: 2, sharpener: 1 }
+    };
     
-    throw error;
-  }
+    if (!Buffer.isBuffer(buffer)) throw new Error('Image buffer is required');
+    if (!config.types[type]) throw new Error(`Available types: ${Object.keys(config.types).join(', ')}`);
+    if (type === 'upscale' && !config.scales.includes(scale.toString())) throw new Error(`Available scales: ${config.scales.join(', ')}`);
+    
+    try {
+        const form = new FormData();
+        form.append('file', buffer, `rynn_${Date.now()}.jpg`);
+        form.append('type', config.types[type].toString());
+        if (!['sharpener'].includes(type)) form.append('scaleRadio', type === 'upscale' ? scale.toString() : '1');
+        
+        const { data: p } = await axios.post('https://photoai.imglarger.com/api/PhoAi/Upload', form, {
+            headers: {
+                ...form.getHeaders(),
+                accept: 'application/json, text/plain, */*',
+                origin: 'https://imglarger.com',
+                referer: 'https://imglarger.com/',
+                'user-agent': 'Mozilla/5.0 (Linux; Android 10; K) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/137.0.0.0 Mobile Safari/537.36'
+            }
+        });
+        if (!p.data.code) throw new Error('Upload failed - no code received');
+        
+        while (true) {
+            const { data: r } = await axios.post('https://photoai.imglarger.com/api/PhoAi/CheckStatus', {
+                code: p.data.code,
+                type: config.types[type]
+            }, {
+                headers: {
+                    accept: 'application/json, text/plain, */*',
+                    'content-type': 'application/json',
+                    origin: 'https://imglarger.com',
+                    referer: 'https://imglarger.com/',
+                    'user-agent': 'Mozilla/5.0 (Linux; Android 10; K) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/137.0.0.0 Mobile Safari/537.36'
+                }
+            });
+            
+            if (r.data.status === 'waiting') continue;
+            if (r.data.status === 'success') return r.data.downloadUrls[0];
+            await new Promise(res => setTimeout(res, 5000));
+        }
+        
+    } catch (error) {
+        console.error(error.message);
+        throw new Error(error.message);
+    }
 }
 
-module.exports = upscaleImage;
+// Example usage (wrapped in async function since top-level await isn't available in CJS)
+async function test() {
+    try {
+        const imageBuffer = fs.readFileSync('./image.jpg');
+        const result = await imglarger(imageBuffer, { scale: '4' });
+        console.log('Enhanced image URL:', result);
+    } catch (error) {
+        console.error('Error:', error.message);
+    }
+}
+
+// Uncomment to run test
+// test();
+
+module.exports = imglarger;
