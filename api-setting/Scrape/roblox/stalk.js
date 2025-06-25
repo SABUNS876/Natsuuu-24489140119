@@ -3,67 +3,64 @@ const cheerio = require('cheerio');
 
 async function searchPlayer(playerIdOrName) {
   try {
-    // Cek apakah input berupa ID numerik atau username
+    // First check if we're dealing with an ID or username
     const isNumericId = /^\d+$/.test(playerIdOrName);
-    const searchUrl = isNumericId 
-      ? `https://www.rolimons.com/player/${playerIdOrName}`
-      : `https://www.rolimons.com/playerapi/playerbyname/${encodeURIComponent(playerIdOrName)}`;
-
+    
+    // If it's a username, first get the player ID
     if (!isNumericId) {
-      // Jika input username, ambil dulu ID-nya
-      const idResponse = await axios.get(searchUrl);
+      const nameSearchUrl = `https://www.rolimons.com/playerapi/playerbyname/${encodeURIComponent(playerIdOrName)}`;
+      const idResponse = await axios.get(nameSearchUrl);
+      
+      // Handle cases where player isn't found
       if (!idResponse.data || !idResponse.data.id) {
-        console.log('Player not found');
-        return null;
+        return {
+          status: false,
+          message: 'Player not found',
+          input: playerIdOrName
+        };
       }
       playerIdOrName = idResponse.data.id;
     }
 
-    // Scrape halaman player
+    // Now fetch the player page
     const playerUrl = `https://www.rolimons.com/player/${playerIdOrName}`;
     const response = await axios.get(playerUrl);
-    const html = response.data;
-    const $ = cheerio.load(html);
+    
+    // Check if the page contains player data
+    if (response.data.includes('Player Not Found')) {
+      return {
+        status: false,
+        message: 'Player not found',
+        playerId: playerIdOrName
+      };
+    }
 
-    // Ekstrak informasi player
+    const $ = cheerio.load(response.data);
+
+    // Extract player information
     const playerInfo = {
-      username: $('.player-name').text().trim(),
-      rank: $('.rank-name').text().trim(),
-      status: $('.player-status').text().trim(),
-      joinDate: $('.join-date').text().replace('Joined:', '').trim(),
-      lastOnline: $('.last-online').text().replace('Last Online:', '').trim(),
-      rap: $('.rap-value').text().trim(),
-      value: $('.value-value').text().trim(),
+      status: true,
+      username: $('.player_name').text().trim(),
+      rank: $('.rank_name').text().trim(),
+      rap: $('.rap_value').text().trim(),
+      value: $('.value_value').text().trim(),
+      lastOnline: $('.last_online').text().replace('Last Online:', '').trim(),
       inventory: {
-        totalItems: $('.inventory-count').text().trim(),
-        limiteds: $('.limiteds-count').text().trim(),
-        rares: $('.rares-count').text().trim()
-      },
-      badges: []
+        total: $('.inventory_count').text().trim(),
+        limiteds: $('.limiteds_count').text().trim()
+      }
     };
 
-    // Ambil badges
-    $('.badge-item').each((index, element) => {
-      playerInfo.badges.push({
-        name: $(element).find('.badge-name').text().trim(),
-        description: $(element).find('.badge-description').text().trim()
-      });
-    });
-
-    // Ambil aktivitas terbaru
-    playerInfo.recentActivity = [];
-    $('.activity-item').each((index, element) => {
-      playerInfo.recentActivity.push($(element).text().trim());
-    });
-
-    console.log('Player Info:', playerInfo);
     return playerInfo;
 
   } catch (error) {
-    console.error('Error:', error.response ? error.response.status : error.message);
-    return null;
+    console.error('Scraping error:', error);
+    return {
+      status: false,
+      error: error.message,
+      stack: error.stack
+    };
   }
 }
 
-// Ekspor langsung fungsi searchPlayer
 module.exports = searchPlayer;
