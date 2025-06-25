@@ -93,13 +93,6 @@
       "name": "Downloader",
       "items": [
         {
-          "name": "Youtube Audio V2",
-          "desc": "Gunakan Ini Jika Yang Yta Pertama Tidak Bisa",
-          "path": "/downloader/ytav2?url=",
-          "status": "ready",
-          "requireKey": false
-        },
-          {
           "name": "Twitter",
           "desc": "Download Twitter",
           "path": "/downloader/twitterdl?url=",
