@@ -335,7 +335,7 @@
         {
           "name": "Stalk Roblox",
           "desc": "Search akun roblox",
-          "path": "/roblox/stalk",
+          "path": "/roblox/stalk?name=",
           "status": "ready",
           "requireKey": false
         },
