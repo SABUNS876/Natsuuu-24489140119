@@ -170,6 +170,13 @@
       "name": "AI Tools",
       "items": [
         {
+          "name": "Remaker AI Only Anime 1:1",
+          "desc": "Buat Anime Mu Menggunakan Remaker AI",
+          "path": "/ai/animeremakerai1:1?prompt=",
+          "status": "ready",
+          "requireKey": false
+        },
+        {
           "name": "Remaker AI Only Anime 16:9",
           "desc": "Buat Anime Mu Menggunakan Remaker AI",
           "path": "/ai/animeremakerai?prompt=",
