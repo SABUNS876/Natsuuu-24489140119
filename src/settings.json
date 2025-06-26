@@ -170,6 +170,13 @@
       "name": "AI Tools",
       "items": [
         {
+          "name": "Html Generator",
+          "desc": "Buat html sesuai prompt yang kamu masukan",
+          "path": "/ai/chtml?q=",
+          "status": "ready",
+          "requireKey": false
+        },
+        {
           "name": "Ghibli Generator",
           "desc": "Buat prompt mu menjadi ghibli",
           "path": "/ai/ghibli?prompt=",
