@@ -3,7 +3,7 @@ const FormData = require('form-data');
 
 async function remakerai(prompt) {
     const form = new FormData();
-    form.append('prompt', pprompt);
+    form.append('prompt', prompt);  // Fixed the typo here (was 'pprompt')
     form.append('style', 'anime');
     form.append('aspect_ratio', '16:9');
     
