@@ -3,7 +3,7 @@ const FormData = require('form-data');
 
 async function remakerai(prompt) {
     const form = new FormData();
-    form.append('prompt', prompt);  // Fixed the typo here (was 'pprompt')
+    form.append('prompt', prompt);
     form.append('style', 'anime');
     form.append('aspect_ratio', '16:9');
     
@@ -15,7 +15,7 @@ async function remakerai(prompt) {
         origin: 'https://remaker.ai',
         priority: 'u=1, i',
         'product-code': '067003',
-        'product-serial': 'c25cb430662409bdea35c95eceaffa1f',
+        'product-serial': 'c25cb430662409bdea35c95eceaffa1f', // Updated product serial
         referer: 'https://remaker.ai/',
         'sec-ch-ua': '"Google Chrome";v="137", "Chromium";v="137", "Not/A)Brand";v="24"',
         'sec-ch-ua-mobile': '?0',
@@ -34,6 +34,7 @@ async function remakerai(prompt) {
         );
         
         const job_id = createResponse.data.result.job_id;
+        let imageUrl;
         
         // Check job status periodically
         for (let i = 0; i < 20; i++) {
@@ -43,12 +44,23 @@ async function remakerai(prompt) {
             );
             
             const result = checkResponse.data.result?.output;
-            if (result && result.length > 0) return result[0];
-            
+            if (result && result.length > 0) {
+                imageUrl = result[0];
+                break;
+            }
             await new Promise(resolve => setTimeout(resolve, 2000));
         }
         
-        throw new Error('Failed to get result after multiple attempts');
+        if (!imageUrl) {
+            throw new Error('Failed to get image URL after multiple attempts');
+        }
+        
+        // Download the image as Buffer
+        const imageResponse = await axios.get(imageUrl, {
+            responseType: 'arraybuffer'
+        });
+        
+        return Buffer.from(imageResponse.data, 'binary');
         
     } catch (error) {
         throw new Error(`Error in remakerai: ${error.message}`);
