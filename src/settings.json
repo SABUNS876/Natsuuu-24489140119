@@ -306,7 +306,7 @@
         {
           "name": "Weather",
           "desc": "Cek Cuaca Sekitar",
-          "path": "/tools/weather?q=",
+          "path": "/tools/weather?city=",
           "status": "ready",
           "requireKey": false
         },
