@@ -304,6 +304,13 @@
       "name": "Tools",
       "items": [
         {
+          "name": "Weather",
+          "desc": "Cek Cuaca Sekitar",
+          "path": "/tools/weather?q=",
+          "status": "ready",
+          "requireKey": false
+        },
+        {
           "name": "Check-Host",
           "desc": "Check Website Atau Ip Mu menggunakan Check-Host",
           "path": "/tools/check-host?url=",
