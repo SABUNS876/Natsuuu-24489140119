@@ -1,40 +1,57 @@
 const axios = require('axios');
 const cheerio = require('cheerio');
 
-const url = 'https://weather.com/';
-
 async function scrapeWeather(city) {
   try {
-    const response = await axios.get(url);
-    const html = response.data;
-    const $ = cheerio.load(html);
+    // First we need to get the location ID for the city
+    const searchUrl = `https://weather.com/en-IN/search/enhanced?q=${encodeURIComponent(city)}`;
+    const searchResponse = await axios.get(searchUrl);
+    const $search = cheerio.load(searchResponse.data);
+    
+    // Get the first location result
+    const locationLink = $search('a[data-testid="search-result"]').first().attr('href');
+    if (!locationLink) {
+      throw new Error('Location not found');
+    }
 
+    // Now scrape the actual weather page
+    const weatherUrl = `https://weather.com${locationLink}`;
+    const weatherResponse = await axios.get(weatherUrl);
+    const $ = cheerio.load(weatherResponse.data);
+
+    // Extract weather data
     const weatherData = {
-      city: city || 'Rochor, Central Singapore',
+      city: $('h1[data-testid="stationName"]').text().trim() || city,
       temperature: $('span[data-testid="TemperatureValue"]').first().text().trim(),
-      conditions: $('[data-testid="wxPhrase"]').first().text().trim(),
-      highLow: $('div[data-testid="SegmentHighTemp"]').first().text().trim(),
-      humidity: $('div[data-testid="HumiditySection"] span').first().text().trim(),
-      wind: $('div[data-testid="WindSection"] span').first().text().trim()
+      conditions: $('[data-testid="wxPhrase"]').text().trim(),
+      highLow: $('[data-testid="todayDetails"] [data-testid="TemperatureValue"]').text().trim(),
+      humidity: $('[data-testid="HumiditySection"] span').first().text().trim(),
+      wind: $('[data-testid="WindSection"] span').first().text().trim(),
+      updated: $('span[data-testid="timestamp"]').text().trim()
     };
 
-    return weatherData;
+    return {
+      status: true,
+      creator: "Natsu - Api",
+      result: weatherData
+    };
+
   } catch (error) {
-    console.error('Error during scraping:', error);
-    throw new Error('Failed to scrape weather data');
+    console.error('Scraping error:', error);
+    return {
+      status: false,
+      creator: "Natsu - Api",
+      message: "Failed to get weather data",
+      error: error.message
+    };
   }
 }
 
-// Example usage when run directly
+// Example usage
 if (require.main === module) {
-  scrapeWeather('Rochor')
-    .then(data => {
-      console.log('Weather Data:', data);
-    })
-    .catch(error => {
-      console.error('Scraping failed:', error.message);
-    });
+  scrapeWeather('Jakarta')
+    .then(data => console.log(data))
+    .catch(err => console.error(err));
 }
 
-// Export the function directly
 module.exports = scrapeWeather;
