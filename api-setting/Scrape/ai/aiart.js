@@ -10,10 +10,9 @@ async function JHZrooArt(prompt) {
   }
 
   const ip = Array.from({ length: 4 }, () => Math.floor(Math.random() * 256)).join('.');
-  const headers = {
+  const baseHeaders = {
     'accept': '*/*',
     'accept-language': 'id-ID,id;q=0.9',
-    'Content-Type': 'multipart/form-data',
     'X-Forwarded-For': ip,
     'X-Real-IP': ip,
     'Client-IP': ip,
@@ -21,35 +20,54 @@ async function JHZrooArt(prompt) {
   };
 
   try {
-    // Langsung menggunakan prompt tanpa modifikasi
+    // 1. Generate image
     const form = new FormData();
-    form.append('video_description', prompt.trim()); // Prompt langsung digunakan
+    form.append('video_description', prompt.trim());
     form.append('test_mode', 'false');
     form.append('model', 'stable-diffusion-3.5-ultra');
     form.append('negative_prompt', 'blurry, distorted, low quality');
     form.append('aspect_ratio', '16:9');
-    form.append('style', 'Photographic');
+    form.append('style', 'Anime');
     form.append('output_format', 'png');
     form.append('seed', '0');
     form.append('website', '');
 
-    const { data } = await axios.post(
+    const { data: genData } = await axios.post(
       'https://aiart-zroo.onrender.com/generate-txt2img-ui',
       form,
-      { headers: { ...headers, ...form.getHeaders() } }
+      { 
+        headers: { 
+          ...baseHeaders,
+          ...form.getHeaders() 
+        }
+      }
     );
 
-    if (data?.image_path && !data.image_path.startsWith('http')) {
-      data.image_url = `https://aiart-zroo.onrender.com${data.image_path}`;
+    // 2. Get image path
+    const imagePath = genData?.image_path;
+    if (!imagePath) {
+      throw new Error('Gagal mendapatkan path gambar');
     }
+
+    // 3. Download image as buffer
+    const imageUrl = imagePath.startsWith('http') 
+      ? imagePath 
+      : `https://aiart-zroo.onrender.com${imagePath}`;
+
+    const { data: imageBuffer } = await axios.get(imageUrl, {
+      responseType: 'arraybuffer',
+      headers: baseHeaders
+    });
 
     return {
       status: true,
       data: {
-        image_url: data.image_url || data.image_path,
-        prompt: prompt.trim() // Mengembalikan prompt asli
+        prompt: prompt.trim(),
+        image_buffer: imageBuffer,
+        mime_type: 'image/png' // Sesuaikan dengan format output
       }
     };
+
   } catch (e) {
     return {
       status: false,
