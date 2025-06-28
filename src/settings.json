@@ -37,6 +37,13 @@
       "name": "Search",
       "items": [
         {
+          "name": "Google Search",
+          "desc": "Search web menggunakan google",
+          "path": "/search/google?q=",
+          "status": "ready",
+          "requireKey": false
+        },
+          {
           "name": "Ikoapp Search",
           "desc": "Search Anime Menggunakan Ikoapp",
           "path": "/search/ikoapp?q=",
