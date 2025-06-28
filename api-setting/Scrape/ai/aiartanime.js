@@ -22,7 +22,7 @@ async function JHZrooArt(prompt) {
   form.append('test_mode', 'false');
   form.append('model', 'stable-diffusion-3.5-ultra');
   form.append('negative_prompt', 'blurry, distorted, low quality');
-  form.append('aspect_ratio', '1:1');
+  form.append('aspect_ratio', '16:9');
   form.append('style', 'Anime');
   form.append('output_format', 'png');
   form.append('seed', '0');
