@@ -2,78 +2,66 @@ const axios = require('axios');
 const cheerio = require('cheerio');
 const readline = require('readline');
 
-async function googleScraper(query, limit = 10) {
+async function googleScraper(query, limit) {
   const searchURL = `https://www.google.com/search?q=${encodeURIComponent(query)}&num=${limit}`;
 
   try {
     const response = await axios.get(searchURL, {
       headers: {
-        'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/91.0.4472.124 Safari/537.36',
-        'Accept': 'text/html,application/xhtml+xml,application/xml;q=0.9,image/webp,*/*;q=0.8',
-        'Accept-Language': 'en-US,en;q=0.5',
-        'Referer': 'https://www.google.com/',
-        'DNT': '1',
-        'Connection': 'keep-alive'
+        'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64)'
       }
     });
 
     const $ = cheerio.load(response.data);
     const links = [];
 
-    // Cara yang lebih reliable untuk ekstrak link hasil pencarian Google
-    $('div.g').each((i, el) => {
-      const link = $(el).find('a[href^="/url?q="]').attr('href');
-      if (link) {
-        const cleanURL = link.split('/url?q=')[1].split('&')[0];
+    $('a').each((_, el) => {
+      const href = $(el).attr('href');
+      if (href && href.startsWith('/url?q=')) {
+        const cleanURL = href.split('/url?q=')[1].split('&')[0];
         if (!cleanURL.includes('google.com')) {
-          links.push(decodeURIComponent(cleanURL));
+          links.push(cleanURL);
         }
       }
     });
 
-    return {
-      status: true,
-      creator: "Natsu",
-      result: links.slice(0, parseInt(limit))
-    };
+    return links.slice(0, parseInt(limit));
   } catch (err) {
-    return {
-      status: false,
-      error: err.message
-    };
+    throw new Error('Gagal mengambil hasil: ' + err.message);
   }
 }
 
-// Untuk penggunaan CLI
 async function runCLI() {
   const rl = readline.createInterface({
     input: process.stdin,
     output: process.stdout
   });
 
-  const ask = (question) => new Promise(resolve => rl.question(question, resolve));
+  function askQuestion(query) {
+    return new Promise(resolve => {
+      rl.question(query, resolve);
+    });
+  }
 
   try {
-    const query = await ask('MASUKAN KATA KUNCI: ');
-    const limit = await ask('JUMLAH URL YANG INGIN DI AMBIL: ');
+    const query = await askQuestion('MASUKAN KATA KUNCI: ');
+    const limit = await askQuestion('JUMLAH URL YANG INGIN DI AMBIL: ');
     
-    const {status, creator, result} = await googleScraper(query, limit);
+    const results = await googleScraper(query, limit);
     
-    if (status && result.length > 0) {
-      console.log('\nHasil URL:');
-      result.forEach((link, i) => console.log(`${i + 1}. ${link}`));
-    } else {
-      console.log('\nTidak ditemukan hasil atau terjadi error');
-    }
+    console.log('\nHasil URL:');
+    results.forEach((link, i) => console.log(`${i + 1}. ${link}`));
   } catch (err) {
-    console.error('Error:', err.message);
+    console.error(err.message);
   } finally {
     rl.close();
   }
 }
 
+// Jika dijalankan langsung dari command line
 if (require.main === module) {
   runCLI();
 }
 
+// Export untuk bisa digunakan di module lain
 module.exports = googleScraper;
