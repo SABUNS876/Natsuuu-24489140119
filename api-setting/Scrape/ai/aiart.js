@@ -28,7 +28,7 @@ async function JHZrooArt(prompt) {
     form.append('negative_prompt', 'blurry, distorted, low quality');
     form.append('aspect_ratio', '16:9');
     form.append('style', 'Anime');
-    form.append('output_format', 'png');
+    form.append('output_format', 'jpeg');
     form.append('seed', '0');
     form.append('website', '');
 
@@ -64,7 +64,7 @@ async function JHZrooArt(prompt) {
       data: {
         prompt: prompt.trim(),
         image_buffer: imageBuffer,
-        mime_type: 'image/png' // Sesuaikan dengan format output
+        mime_type: 'image/jpeg' // Sesuaikan dengan format output
       }
     };
 
