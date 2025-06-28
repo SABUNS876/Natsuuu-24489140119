@@ -177,9 +177,16 @@
       "name": "AI Tools",
       "items": [
         {
-          "name": "AI Art Txt2Img",
+          "name": "AI Art Anime",
+          "desc": "Buat Prompt mu menjadi animek dengan hasil yang lebih bagus",
+          "path": "/ai/aiartanime?prompt=",
+          "status": "ready",
+          "requireKey": false
+        },
+        {
+          "name": "AI Art",
           "desc": "Buat Prompt mu menjadi image dengan hasil yang lebih bagus",
-          "path": "/ai/aiart?apikey=&prompt",
+          "path": "/ai/aiart?prompt=",
           "status": "ready",
           "requireKey": false
         },
