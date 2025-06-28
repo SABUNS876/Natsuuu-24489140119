@@ -39,7 +39,7 @@
         {
           "name": "Google Search",
           "desc": "Search web menggunakan google",
-          "path": "/search/google?q=",
+          "path": "/search/google?q=&limit=",
           "status": "ready",
           "requireKey": false
         },
