@@ -1,85 +1,80 @@
+
+}
+
+module.exports = JHZrooArt;
 const axios = require('axios');
 const FormData = require('form-data');
 
 async function JHZrooArt(prompt) {
-  if (!prompt || typeof prompt !== 'string') {
-    return {
-      status: false,
-      error: 'Prompt harus berupa string yang valid'
+  // Validasi input
+  if (!prompt?.trim()) {
+    return { 
+      status: false, 
+      error: 'Prompt tidak boleh kosong' 
     };
   }
 
-  const ip = Array.from({ length: 4 }, () => Math.floor(Math.random() * 256)).join('.');
-  const baseHeaders = {
-    'accept': '*/*',
-    'accept-language': 'id-ID,id;q=0.9',
-    'X-Forwarded-For': ip,
-    'X-Real-IP': ip,
-    'Client-IP': ip,
-    'Forwarded': `for=${ip}`
+  // Konfigurasi
+  const config = {
+    timeout: 25000, // 25 detik timeout
+    maxSize: 2 * 1024 * 1024, // Batas 2MB
+    baseUrl: 'https://aiart-zroo.onrender.com'
   };
 
   try {
-    // 1. Generate image
+    // 1. Generate gambar dengan semua parameter termasuk style dan aspect ratio
     const form = new FormData();
     form.append('video_description', prompt.trim());
     form.append('test_mode', 'false');
     form.append('model', 'stable-diffusion-3.5-ultra');
     form.append('negative_prompt', 'blurry, distorted, low quality');
-    form.append('aspect_ratio', '16:9');
-    form.append('style', 'Anime');
-    form.append('output_format', 'jpeg');
+    form.append('aspect_ratio', '16:9'); // Default landscape
+    form.append('style', 'Photographic'); // Default style
+    form.append('output_format', 'png'); // Tetap PNG
     form.append('seed', '0');
     form.append('website', '');
 
+    // 2. Request generasi gambar
     const { data: genData } = await axios.post(
-      'https://aiart-zroo.onrender.com/generate-txt2img-ui',
+      `${config.baseUrl}/generate-txt2img-ui`,
       form,
-      { 
-        headers: { 
-          ...baseHeaders,
-          ...form.getHeaders() 
-        }
+      {
+        headers: form.getHeaders(),
+        timeout: config.timeout
       }
     );
 
-    // 2. Get image path
-    const imagePath = genData?.image_path;
-    if (!imagePath) {
-      throw new Error('Gagal mendapatkan path gambar');
-    }
+    // 3. Dapatkan URL gambar
+    const imageUrl = genData.image_path.startsWith('http')
+      ? genData.image_path
+      : `${config.baseUrl}${genData.image_path}`;
 
-    // 3. Download image as buffer
-    const imageUrl = imagePath.startsWith('http') 
-      ? imagePath 
-      : `https://aiart-zroo.onrender.com${imagePath}`;
-
+    // 4. Download gambar dengan batasan ukuran
     const response = await axios.get(imageUrl, {
       responseType: 'arraybuffer',
-      headers: {
-        ...baseHeaders,
-        'accept': 'image/jpeg'
-      }
+      timeout: config.timeout,
+      maxContentLength: config.maxSize
     });
 
-    // Ensure we got an image
-    if (!response.headers['content-type']?.includes('image/jpeg')) {
-      throw new Error('Respon bukan gambar JPEG');
+    // 5. Validasi ukuran
+    if (response.data.length > config.maxSize) {
+      throw new Error(`Ukuran gambar melebihi batas ${config.maxSize} bytes`);
     }
 
     return {
       status: true,
       data: {
-        prompt: prompt.trim(),
-        image_buffer: response.data,
-        mime_type: 'image/jpeg'
+        buffer: response.data,
+        mime: 'image/png',
+        size: response.data.length,
+        prompt: prompt.trim()
       }
     };
 
-  } catch (e) {
+  } catch (error) {
     return {
       status: false,
-      error: e.response?.data?.toString() || e.message
+      error: error.message
     };
   }
 }
