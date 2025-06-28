@@ -10,9 +10,10 @@ async function JHZrooArt(prompt) {
   }
 
   const ip = Array.from({ length: 4 }, () => Math.floor(Math.random() * 256)).join('.');
-  const baseHeaders = {
+  const headers = {
     'accept': '*/*',
     'accept-language': 'id-ID,id;q=0.9',
+    'Content-Type': 'multipart/form-data',
     'X-Forwarded-For': ip,
     'X-Real-IP': ip,
     'Client-IP': ip,
@@ -20,9 +21,9 @@ async function JHZrooArt(prompt) {
   };
 
   try {
-    // 1. Generate image
+    // Langsung menggunakan prompt tanpa modifikasi
     const form = new FormData();
-    form.append('video_description', prompt.trim());
+    form.append('video_description', prompt.trim()); // Prompt langsung digunakan
     form.append('test_mode', 'false');
     form.append('model', 'stable-diffusion-3.5-ultra');
     form.append('negative_prompt', 'blurry, distorted, low quality');
@@ -32,42 +33,23 @@ async function JHZrooArt(prompt) {
     form.append('seed', '0');
     form.append('website', '');
 
-    const { data: genData } = await axios.post(
+    const { data } = await axios.post(
       'https://aiart-zroo.onrender.com/generate-txt2img-ui',
       form,
-      { 
-        headers: { 
-          ...baseHeaders,
-          ...form.getHeaders() 
-        }
-      }
+      { headers: { ...headers, ...form.getHeaders() } }
     );
 
-    // 2. Get image path
-    const imagePath = genData?.image_path;
-    if (!imagePath) {
-      throw new Error('Gagal mendapatkan path gambar');
+    if (data?.image_path && !data.image_path.startsWith('http')) {
+      data.image_url = `https://aiart-zroo.onrender.com${data.image_path}`;
     }
-
-    // 3. Download image as buffer
-    const imageUrl = imagePath.startsWith('http') 
-      ? imagePath 
-      : `https://aiart-zroo.onrender.com${imagePath}`;
-
-    const { data: imageBuffer } = await axios.get(imageUrl, {
-      responseType: 'arraybuffer',
-      headers: baseHeaders
-    });
 
     return {
       status: true,
       data: {
-        prompt: prompt.trim(),
-        image_buffer: imageBuffer,
-        mime_type: 'image/png' // Sesuaikan dengan format output
+        image_url: data.image_url || data.image_path,
+        prompt: prompt.trim() // Mengembalikan prompt asli
       }
     };
-
   } catch (e) {
     return {
       status: false,
