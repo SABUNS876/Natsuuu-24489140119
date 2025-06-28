@@ -33,7 +33,7 @@ async function googleScraper(query, limit = 10) {
 
     return {
       status: true,
-      creator: "Your Name",
+      creator: "Natsu",
       result: links.slice(0, parseInt(limit))
     };
   } catch (err) {
