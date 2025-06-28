@@ -177,6 +177,13 @@
       "name": "AI Tools",
       "items": [
         {
+          "name": "AI Art Txt2Img",
+          "desc": "Buat Prompt mu menjadi image dengan hasil yang lebih bagus",
+          "path": "/ai/aiart?apikey=&prompt",
+          "status": "ready",
+          "requireKey": false
+        },
+        {
           "name": "Html Generator",
           "desc": "Buat html sesuai prompt yang kamu masukan",
           "path": "/ai/chtml?q=",
