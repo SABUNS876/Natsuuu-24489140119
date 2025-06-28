@@ -54,24 +54,32 @@ async function JHZrooArt(prompt) {
       ? imagePath 
       : `https://aiart-zroo.onrender.com${imagePath}`;
 
-    const { data: imageBuffer } = await axios.get(imageUrl, {
+    const response = await axios.get(imageUrl, {
       responseType: 'arraybuffer',
-      headers: baseHeaders
+      headers: {
+        ...baseHeaders,
+        'accept': 'image/jpeg'
+      }
     });
+
+    // Ensure we got an image
+    if (!response.headers['content-type']?.includes('image/jpeg')) {
+      throw new Error('Respon bukan gambar JPEG');
+    }
 
     return {
       status: true,
       data: {
         prompt: prompt.trim(),
-        image_buffer: imageBuffer,
-        mime_type: 'image/jpeg' // Sesuaikan dengan format output
+        image_buffer: response.data,
+        mime_type: 'image/jpeg'
       }
     };
 
   } catch (e) {
     return {
       status: false,
-      error: e.response?.data || e.message
+      error: e.response?.data?.toString() || e.message
     };
   }
 }
