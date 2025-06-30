@@ -25,33 +25,62 @@ async function yta(url) {
   try {
     // Step 1: Get video info
     const infoResponse = await axios.post(apiUrl, data, { headers });
-    const audioUrl = infoResponse.data?.url;
+    
+    // Debug: Log the full response for inspection
+    console.log('API Response:', infoResponse.data);
+    
+    // Handle different response formats
+    let audioUrl = infoResponse.data?.url 
+                || infoResponse.data?.downloadUrl 
+                || infoResponse.data?.audioUrl 
+                || infoResponse.data?.links?.audio;
     
     if (!audioUrl) {
-      throw new Error('Audio URL not found in response');
+      // If no direct audio URL found, try to find in formats array
+      if (infoResponse.data?.formats) {
+        const audioFormat = infoResponse.data.formats.find(f => 
+          f.mimeType?.includes('audio') || f.audioQuality
+        );
+        if (audioFormat) audioUrl = audioFormat.url;
+      }
+    }
+    
+    if (!audioUrl) {
+      // If still no URL, return the full response for debugging
+      return {
+        status: false,
+        message: 'Audio URL not found in response',
+        fullResponse: infoResponse.data
+      };
     }
 
     // Step 2: Download the audio file
     const audioResponse = await axios.get(audioUrl, {
       responseType: 'arraybuffer',
       headers: {
-        'user-agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/135.0.0.0 Safari/537.36'
+        'user-agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/135.0.0.0 Safari/537.36',
+        'referer': 'https://ytmp3.at/'
       }
     });
 
-    // Return object that will be handled by your main server
     return {
+      status: true,
       audioBuffer: Buffer.from(audioResponse.data, 'binary'),
-      contentType: 'audio/mpeg', // Default to MP3
+      contentType: audioResponse.headers['content-type'] || 'audio/mpeg',
       metadata: {
-        title: infoResponse.data?.title,
-        duration: infoResponse.data?.duration
+        title: infoResponse.data?.title || 'YouTube Audio',
+        duration: infoResponse.data?.duration,
+        originalUrl: url
       }
     };
 
   } catch (error) {
     console.error('Error in yta scraper:', error);
-    throw new Error(`Failed to process audio: ${error.message}`);
+    return {
+      status: false,
+      message: error.message,
+      response: error.response?.data
+    };
   }
 }
 
