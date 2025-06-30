@@ -23,10 +23,35 @@ async function yta(url) {
   };
 
   try {
-    const response = await axios.post(apiUrl, data, { headers });
-    return response.data;
+    // Step 1: Get video info
+    const infoResponse = await axios.post(apiUrl, data, { headers });
+    const audioUrl = infoResponse.data?.url;
+    
+    if (!audioUrl) {
+      throw new Error('Audio URL not found in response');
+    }
+
+    // Step 2: Download the audio file
+    const audioResponse = await axios.get(audioUrl, {
+      responseType: 'arraybuffer',
+      headers: {
+        'user-agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/135.0.0.0 Safari/537.36'
+      }
+    });
+
+    // Return object that will be handled by your main server
+    return {
+      audioBuffer: Buffer.from(audioResponse.data, 'binary'),
+      contentType: 'audio/mpeg', // Default to MP3
+      metadata: {
+        title: infoResponse.data?.title,
+        duration: infoResponse.data?.duration
+      }
+    };
+
   } catch (error) {
-    throw new Error(`Failed to fetch video info: ${error.message}`);
+    console.error('Error in yta scraper:', error);
+    throw new Error(`Failed to process audio: ${error.message}`);
   }
 }
 
