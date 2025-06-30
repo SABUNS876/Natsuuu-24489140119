@@ -4,7 +4,7 @@ const cheerio = require('cheerio');
 // Config dengan timeout dan retry
 const CONFIG = {
   baseUrl: 'https://veo.ai',
-  timeout: 15000, // 15 detik
+  timeout: 150000, // 15 detik
   retries: 3,
   retryDelay: 2000, // 2 detik
   headers: {
