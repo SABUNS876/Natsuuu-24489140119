@@ -1,56 +1,71 @@
 const axios = require('axios');
-const qs = require('querystring');
+const querystring = require('querystring');
 
-async function downloadYouTubeAudio(url, res) {
-  try {
-    // Validasi cepat URL
-    if (!url || !url.includes('youtu')) {
-      throw new Error('URL YouTube tidak valid');
-    }
+/*
+- HARGAI WOY JANGAN DIHAPUS!
+- Skrep by *JH a.k.a DHIKA - FIONY BOT*
+- Credits to all Fiony's Bot Admin.
+- Maaf kalo kurang maksimal atau berantakan
+- Hasil gabut saja xixixi.
+*/
 
-    const headers = {
-      'content-type': 'application/x-www-form-urlencoded',
-      'origin': 'https://www.videodowns.com',
-      'user-agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/125.0.0.0 Safari/537.36'
+async function JHVidDowns(youtubeUrl) {
+  if (!youtubeUrl || typeof youtubeUrl !== 'string') {
+    return {
+      error: 'URL harus berupa string yang valid'
     };
+  }
 
-    // Step 1: Get download link (timeout 5 detik)
+  const payload = querystring.stringify({ url: youtubeUrl });
+
+  const headers = {
+    'content-type': 'application/x-www-form-urlencoded',
+    'origin': 'https://www.videodowns.com',
+    'user-agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/91.0.4472.124 Safari/537.36'
+  };
+
+  try {
     const { data } = await axios.post(
       'https://www.videodowns.com/youtube-video-downloader.php?action=get_info',
-      qs.stringify({ url }),
-      { headers, timeout: 5000 }
+      payload,
+      { headers }
     );
 
-    if (!data.formats?.audio) {
-      throw new Error('Tidak bisa mendapatkan link download');
-    }
+    const info = data.info || {};
+    const formats = data.formats || {};
+    
+    const generateLink = (formatType) => {
+      if (formats[formatType]?.ext) {
+        return `https://www.videodowns.com/youtube-video-downloader.php?download=1&url=${encodeURIComponent(youtubeUrl)}&format=${formatType}`;
+      }
+      return null;
+    };
 
-    const audioUrl = `https://www.videodowns.com/youtube-video-downloader.php?download=1&url=${encodeURIComponent(url)}&format=audio`;
-
-    // Step 2: Stream langsung ke response
-    const audioStream = await axios.get(audioUrl, {
-      responseType: 'stream',
-      headers: {
-        'user-agent': headers['user-agent'],
-        'accept-encoding': 'identity' // Nonaktifkan kompresi
-      },
-      timeout: 30000 // Timeout 30 detik
-    });
-
-    // Set header dan stream audio
-    res.set({
-      'Content-Type': 'audio/mpeg',
-      'Content-Disposition': 'inline'
-    });
-
-    audioStream.data.pipe(res);
-
+    return {
+      status: true,
+      data: {
+        metadata: {
+          title: info.title || null,
+          channel: info.channel || info.author || null,
+          views: info.view_count || null,
+          duration: info.duration || null,
+          thumbnail: data.thumbnail || null
+        },
+        downloads: {
+          best_quality: generateLink('best'),
+          medium_quality: generateLink('medium'),
+          low_quality: generateLink('low'),
+          audio_only: generateLink('audio')
+        },
+        sanitized_url: data.sanitized || null
+      }
+    };
   } catch (error) {
-    console.error('Error:', error.message);
-    if (!res.headersSent) {
-      res.status(500).send('Gagal mengunduh audio: ' + error.message);
-    }
+    return {
+      status: false,
+      error: error.response?.data || error.message
+    };
   }
 }
 
-module.exports = downloadYouTubeAudio;
+module.exports = JHVidDowns;
