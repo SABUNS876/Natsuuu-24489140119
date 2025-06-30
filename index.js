@@ -94,54 +94,40 @@ const checkApiKey = (req, res, next) => {
     next();
 };
 
-const handleFileFromUrl = async (req, res, next) => {
-    if (req.body && req.body.url) {
+const handleAudioFromUrl = async (req, res, next) => {
+    if (req.body && req.body.audioUrl) {
         try {
-            const response = await axios.get(req.body.url, {
+            const response = await axios.get(req.body.audioUrl, {
                 responseType: 'arraybuffer'
             });
             
-            req.fileData = {
+            req.audio = {
                 buffer: Buffer.from(response.data, 'binary'),
-                contentType: response.headers['content-type'] || getContentTypeFromUrl(req.body.url)
+                contentType: response.headers['content-type'] || getAudioContentType(req.body.audioUrl)
             };
         } catch (error) {
-            console.error('Error fetching file from URL:', error);
+            console.error('Error fetching audio from URL:', error);
         }
     }
     next();
 };
 
-const getContentTypeFromUrl = (url) => {
+const getAudioContentType = (url) => {
     const extension = url.split('.').pop().toLowerCase();
-    const contentTypes = {
-        // Images
-        jpg: 'image/jpeg',
-        jpeg: 'image/jpeg',
-        png: 'image/png',
-        gif: 'image/gif',
-        webp: 'image/webp',
-        // Audio
+    const audioTypes = {
         mp3: 'audio/mpeg',
         wav: 'audio/wav',
         ogg: 'audio/ogg',
-        m4a: 'audio/mp4',
-        // Video
-        mp4: 'video/mp4',
-        webm: 'video/webm',
-        // Documents
-        pdf: 'application/pdf',
-        // Default
-        default: 'application/octet-stream'
+        m4a: 'audio/mp4'
     };
-    return contentTypes[extension] || contentTypes.default;
+    return audioTypes[extension] || 'audio/mpeg'; // Default to MP3
 };
 
 // ======================== ROUTE HANDLER ========================
 Object.entries(scrapers).forEach(([route, { handler, config }]) => {
     const method = config.method.toLowerCase();
     
-    app[method](route, checkApiKey, handleFileFromUrl, async (req, res) => {
+    app[method](route, checkApiKey, handleAudioFromUrl, async (req, res) => {
         try {
             let params = [];
             
@@ -150,48 +136,44 @@ Object.entries(scrapers).forEach(([route, { handler, config }]) => {
                     .filter(key => key !== 'apikey')
                     .map(key => req.query[key]);
             } else {
-                params = [req.fileData || req.body];
+                params = [req.audio || req.body];
             }
             
             const result = await handler(...params);
             
-            // Handle Buffer responses (images, audio, files)
-            if (Buffer.isBuffer(result)) {
-                const contentType = getContentTypeFromUrl(route) || 'application/octet-stream';
+            // Handle audio buffer response
+            if (result && result.audioBuffer && result.contentType) {
+                res.set('Content-Type', result.contentType);
+                return res.send(result.audioBuffer);
+            }
+            
+            // Handle direct buffer (for backward compatibility)
+            if (Buffer.isBuffer(result) && route.match(/\.(mp3|wav|ogg|m4a)$/i)) {
+                const contentType = getAudioContentType(route);
                 res.set('Content-Type', contentType);
                 return res.send(result);
             }
             
-            // Handle Object responses with buffer or URL
-            if (result && typeof result === 'object') {
-                // If it has a buffer and content type
-                if (result.buffer && result.contentType) {
-                    res.set('Content-Type', result.contentType);
-                    return res.send(result.buffer);
-                }
-                
-                // If it has a URL (image, audio, video, etc.)
-                if (result.url) {
-                    try {
-                        const fileResponse = await axios.get(result.url, {
-                            responseType: 'arraybuffer'
-                        });
-                        const contentType = fileResponse.headers['content-type'] || getContentTypeFromUrl(result.url);
-                        res.set('Content-Type', contentType);
-                        return res.send(Buffer.from(fileResponse.data, 'binary'));
-                    } catch (error) {
-                        console.error('Error fetching file from result URL:', error);
-                        // Fallback to JSON response
-                        return res.json({
-                            status: true,
-                            creator: apiConfig.apiSettings.creator,
-                            result
-                        });
-                    }
+            // Handle audio URL in result
+            if (result && typeof result === 'object' && result.url && result.url.match(/\.(mp3|wav|ogg|m4a)$/i)) {
+                try {
+                    const audioResponse = await axios.get(result.url, {
+                        responseType: 'arraybuffer'
+                    });
+                    const contentType = audioResponse.headers['content-type'] || getAudioContentType(result.url);
+                    res.set('Content-Type', contentType);
+                    return res.send(Buffer.from(audioResponse.data, 'binary'));
+                } catch (error) {
+                    console.error('Error fetching audio URL from result:', error);
+                    return res.json({
+                        status: true,
+                        creator: apiConfig.apiSettings.creator,
+                        result
+                    });
                 }
             }
             
-            // Default JSON response
+            // Default JSON response (for non-audio)
             res.json({
                 status: true,
                 creator: apiConfig.apiSettings.creator,
@@ -206,7 +188,6 @@ Object.entries(scrapers).forEach(([route, { handler, config }]) => {
         }
     });
 
-    // Handle routes with required parameters
     if (config.path && config.path.includes('?')) {
         app.get(config.path.split('?')[0], checkApiKey, (req, res) => {
             res.status(400).json({
