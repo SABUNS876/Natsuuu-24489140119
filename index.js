@@ -14,7 +14,6 @@ app.use('/src', express.static('src'));
 
 const apiConfig = require('./src/settings.json');
 
-// ======================== LOAD SCRAPERS ========================
 const loadScrapers = () => {
     const scrapers = {};
     const endpointConfigs = {};
@@ -63,7 +62,6 @@ const loadScrapers = () => {
 
 const scrapers = loadScrapers();
 
-// ======================== MIDDLEWARE ========================
 const checkApiKey = (req, res, next) => {
     const path = req.path;
     const endpoint = scrapers[path];
@@ -94,7 +92,24 @@ const checkApiKey = (req, res, next) => {
     next();
 };
 
-const handleAudioFromUrl = async (req, res, next) => {
+const handleMediaFromUrl = async (req, res, next) => {
+    // Handle image URL if present
+    if (req.body && req.body.imageUrl) {
+        try {
+            const response = await axios.get(req.body.imageUrl, {
+                responseType: 'arraybuffer'
+            });
+            
+            req.image = {
+                buffer: Buffer.from(response.data, 'binary'),
+                contentType: response.headers['content-type']
+            };
+        } catch (error) {
+            console.error('Error fetching image from URL:', error);
+        }
+    }
+    
+    // Handle audio URL if present
     if (req.body && req.body.audioUrl) {
         try {
             const response = await axios.get(req.body.audioUrl, {
@@ -109,25 +124,26 @@ const handleAudioFromUrl = async (req, res, next) => {
             console.error('Error fetching audio from URL:', error);
         }
     }
+    
     next();
 };
 
+// Helper function to determine audio content type
 const getAudioContentType = (url) => {
     const extension = url.split('.').pop().toLowerCase();
-    const audioTypes = {
-        mp3: 'audio/mpeg',
-        wav: 'audio/wav',
-        ogg: 'audio/ogg',
-        m4a: 'audio/mp4'
-    };
-    return audioTypes[extension] || 'audio/mpeg'; // Default to MP3
+    switch (extension) {
+        case 'mp3': return 'audio/mpeg';
+        case 'wav': return 'audio/wav';
+        case 'ogg': return 'audio/ogg';
+        case 'm4a': return 'audio/mp4';
+        default: return 'audio/mpeg'; // default to mp3
+    }
 };
 
-// ======================== ROUTE HANDLER ========================
 Object.entries(scrapers).forEach(([route, { handler, config }]) => {
     const method = config.method.toLowerCase();
     
-    app[method](route, checkApiKey, handleAudioFromUrl, async (req, res) => {
+    app[method](route, checkApiKey, handleMediaFromUrl, async (req, res) => {
         try {
             let params = [];
             
@@ -136,35 +152,55 @@ Object.entries(scrapers).forEach(([route, { handler, config }]) => {
                     .filter(key => key !== 'apikey')
                     .map(key => req.query[key]);
             } else {
-                params = [req.audio || req.body];
+                params = [req.image || req.audio || req.body]; // Gunakan image/audio jika ada
             }
             
             const result = await handler(...params);
             
-            // Handle audio buffer response
+            // Handle image responses
+            if (result && result.imageBuffer && result.contentType) {
+                res.set('Content-Type', result.contentType);
+                return res.send(result.imageBuffer);
+            }
+            
+            // Handle audio responses
             if (result && result.audioBuffer && result.contentType) {
                 res.set('Content-Type', result.contentType);
                 return res.send(result.audioBuffer);
             }
             
-            // Handle direct buffer (for backward compatibility)
-            if (Buffer.isBuffer(result) && route.match(/\.(mp3|wav|ogg|m4a)$/i)) {
-                const contentType = getAudioContentType(route);
-                res.set('Content-Type', contentType);
+            // Handle direct buffer (check if it's audio by route extension)
+            if (Buffer.isBuffer(result)) {
+                if (route.match(/\.(mp3|wav|ogg|m4a)$/i)) {
+                    res.set('Content-Type', getAudioContentType(route));
+                } else {
+                    res.set('Content-Type', 'image/jpeg'); // Default for images
+                }
                 return res.send(result);
             }
             
-            // Handle audio URL in result
-            if (result && typeof result === 'object' && result.url && result.url.match(/\.(mp3|wav|ogg|m4a)$/i)) {
+            // Handle URL responses (both image and audio)
+            if (result && typeof result === 'object' && result.url) {
                 try {
-                    const audioResponse = await axios.get(result.url, {
-                        responseType: 'arraybuffer'
-                    });
-                    const contentType = audioResponse.headers['content-type'] || getAudioContentType(result.url);
-                    res.set('Content-Type', contentType);
-                    return res.send(Buffer.from(audioResponse.data, 'binary'));
+                    // Check if it's an image URL
+                    if (result.url.match(/\.(jpeg|jpg|png|gif)$/i)) {
+                        const imageResponse = await axios.get(result.url, {
+                            responseType: 'arraybuffer'
+                        });
+                        res.set('Content-Type', imageResponse.headers['content-type']);
+                        return res.send(Buffer.from(imageResponse.data, 'binary'));
+                    }
+                    // Check if it's an audio URL
+                    else if (result.url.match(/\.(mp3|wav|ogg|m4a)$/i)) {
+                        const audioResponse = await axios.get(result.url, {
+                            responseType: 'arraybuffer'
+                        });
+                        res.set('Content-Type', audioResponse.headers['content-type'] || getAudioContentType(result.url));
+                        return res.send(Buffer.from(audioResponse.data, 'binary'));
+                    }
                 } catch (error) {
-                    console.error('Error fetching audio URL from result:', error);
+                    console.error('Error fetching media URL from result:', error);
+                    // Fallback ke JSON response jika gagal mengambil media
                     return res.json({
                         status: true,
                         creator: apiConfig.apiSettings.creator,
@@ -173,7 +209,7 @@ Object.entries(scrapers).forEach(([route, { handler, config }]) => {
                 }
             }
             
-            // Default JSON response (for non-audio)
+            // Default JSON response
             res.json({
                 status: true,
                 creator: apiConfig.apiSettings.creator,
@@ -199,7 +235,6 @@ Object.entries(scrapers).forEach(([route, { handler, config }]) => {
     }
 });
 
-// ======================== BASIC ROUTES ========================
 app.get('/', (req, res) => {
     res.sendFile(path.join(__dirname, 'public', 'index.html'));
 });
@@ -208,7 +243,6 @@ app.use((req, res) => {
     res.status(404).sendFile(path.join(__dirname, 'public', '404.html'));
 });
 
-// ======================== START SERVER ========================
 const PORT = process.env.PORT || 3000;
 app.listen(PORT, () => {
     console.log(`Server berjalan di port ${PORT}`);
