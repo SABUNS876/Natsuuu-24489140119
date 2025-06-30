@@ -1,18 +1,30 @@
 const axios = require('axios');
 const qs = require('querystring');
 
-async function youtubeAudioDownloader(url) {
-  /*
-   * Modified by: [Your Name]
-   * Original Credits: JH a.k.a DHIKA - FIONY BOT
-   * Function: Downloads YouTube audio and returns as buffer
-   */
+function validateYouTubeUrl(url) {
+  // Pengecekan lebih komprehensif untuk berbagai format URL YouTube
+  const patterns = [
+    /^(https?:\/\/)?(www\.)?(youtube\.com|youtu\.be)\/.+/,
+    /^https?:\/\/youtube\.com\/watch\?v=[\w-]+/,
+    /^https?:\/\/youtu\.be\/[\w-]+/,
+    /^https?:\/\/youtube\.com\/shorts\/[\w-]+/,
+    /^https?:\/\/m\.youtube\.com\/watch\?v=[\w-]+/,
+    /^https?:\/\/www\.youtube\.com\/embed\/[\w-]+/
+  ];
   
-  if (!url || !url.includes('youtube.com')) {
-    throw new Error('URL YouTube tidak valid');
+  return patterns.some(pattern => pattern.test(url));
+}
+
+async function youtubeAudioDownloader(url) {
+  // Validasi URL yang lebih baik
+  if (!url || !validateYouTubeUrl(url)) {
+    throw new Error('URL YouTube tidak valid. Contoh URL valid: https://www.youtube.com/watch?v=dQw4w9WgXcQ');
   }
 
-  const payload = qs.stringify({ url });
+  // Bersihkan URL dari parameter tambahan jika ada
+  const cleanUrl = url.split('&')[0];
+  const payload = qs.stringify({ url: cleanUrl });
+
   const headers = {
     'content-type': 'application/x-www-form-urlencoded',
     'origin': 'https://www.videodowns.com',
@@ -24,24 +36,30 @@ async function youtubeAudioDownloader(url) {
     const { data } = await axios.post(
       'https://www.videodowns.com/youtube-video-downloader.php?action=get_info',
       payload,
-      { headers }
+      { headers, timeout: 10000 } // Timeout 10 detik
     );
 
-    // Step 2: Extract audio download URL
-    const audioUrl = data.formats?.audio 
-      ? `https://www.videodowns.com/youtube-video-downloader.php?download=1&url=${encodeURIComponent(url)}&format=audio`
-      : null;
+    // Debug: Lihat respons API
+    console.log('API Response:', JSON.stringify(data, null, 2));
 
-    if (!audioUrl) {
-      throw new Error('Tidak dapat menemukan URL audio');
+    // Step 2: Extract audio download URL
+    let audioUrl;
+    if (data.formats?.audio) {
+      audioUrl = `https://www.videodowns.com/youtube-video-downloader.php?download=1&url=${encodeURIComponent(cleanUrl)}&format=audio`;
+    } else if (data.links?.audio) {
+      audioUrl = data.links.audio;
+    } else {
+      throw new Error('URL audio tidak ditemukan dalam respons API');
     }
 
     // Step 3: Download the audio file directly
     const audioResponse = await axios.get(audioUrl, {
       responseType: 'arraybuffer',
       headers: {
-        'user-agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/91.0.4472.124 Safari/537.36'
-      }
+        'user-agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/91.0.4472.124 Safari/537.36',
+        'referer': 'https://www.videodowns.com/'
+      },
+      timeout: 30000 // Timeout 30 detik untuk download
     });
 
     return {
@@ -51,17 +69,19 @@ async function youtubeAudioDownloader(url) {
       metadata: {
         title: data.info?.title || 'YouTube Audio',
         duration: data.info?.duration || null,
-        thumbnail: data.thumbnail || null
+        thumbnail: data.thumbnail || null,
+        originalUrl: cleanUrl
       }
     };
 
   } catch (error) {
-    console.error('Error in youtubeAudioDownloader:', error);
-    return {
-      status: false,
+    console.error('Error details:', {
       message: error.message,
-      error: error.response?.data || null
-    };
+      response: error.response?.data,
+      url: url
+    });
+    
+    throw new Error(`Gagal mengunduh audio: ${error.message}`);
   }
 }
 
