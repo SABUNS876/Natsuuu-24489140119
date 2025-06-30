@@ -1,57 +1,95 @@
+const WebSocket = require('ws');
 const axios = require('axios');
-const FormData = require('form-data');
 
-async function JHZrooArt(prompt) {
-  if (!prompt || typeof prompt !== 'string') {
-    throw new Error('Prompt harus berupa string yang valid');
-  }
-
-  const ip = Array.from({ length: 4 }, () => Math.floor(Math.random() * 256)).join('.');
-  const headers = {
-    'accept': '*/*',
-    'accept-language': 'id-ID,id;q=0.9',
-    'Content-Type': 'multipart/form-data',
-    'X-Forwarded-For': ip,
-    'X-Real-IP': ip,
-    'Client-IP': ip,
-    'Forwarded': `for=${ip}`
-  };
-
-  const form = new FormData();
-  form.append('video_description', prompt.trim());
-  form.append('test_mode', 'false');
-  form.append('model', 'stable-diffusion-3.5-ultra');
-  form.append('negative_prompt', 'blurry, distorted, low quality');
-  form.append('aspect_ratio', '16:9');
-  form.append('style', 'Anime');
-  form.append('output_format', 'png');
-  form.append('seed', '0');
-  form.append('website', '');
-
-  // Generate the image
-  const { data } = await axios.post(
-    'https://aiart-zroo.onrender.com/generate-txt2img-ui',
-    form,
-    { headers: { ...headers, ...form.getHeaders() } }
-  );
-
-  // Get image URL
-  const imageUrl = data?.image_path?.startsWith('http') 
-    ? data.image_path 
-    : `https://aiart-zroo.onrender.com${data.image_path}`;
-
-  if (!imageUrl) throw new Error('Failed to get image URL');
-
-  // Download and return the raw image buffer
-  const imageResponse = await axios.get(imageUrl, {
-    responseType: 'arraybuffer',
-    headers: {
-      'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/91.0.4472.124 Safari/537.36',
-      'Referer': 'https://aiart-zroo.onrender.com/'
-    }
-  });
-
-  return Buffer.from(imageResponse.data);
+async function aiart(prompt, options = {}) {
+    return new Promise(async (resolve, reject) => {
+        try {
+            const {
+                style = 'Anime',
+                negativePrompt = '(worst quality, low quality:1.4), (greyscale, monochrome:1.1), cropped, lowres , username, blurry, trademark, watermark, title, multiple view, Reference sheet, curvy, plump, fat, strabismus, clothing cutout, side slit,worst hand, (ugly face:1.2), extra leg, extra arm, bad foot, text, name',
+                scale = 7
+            } = options;
+            
+            const _style = ['Anime', 'Realistic'];
+            
+            if (!prompt) return reject(new Error('Prompt is required'));
+            if (!_style.includes(style)) return reject(new Error(`Available styles: ${_style.join(', ')}`));
+            
+            const session_hash = Math.random().toString(36).substring(2);
+            const socket = new WebSocket('wss://app.yimeta.ai/ai-art-generator/queue/join');
+            
+            socket.on('open', () => {
+                console.log('Connected to WebSocket server');
+            });
+            
+            socket.on('message', async (data) => {
+                try {
+                    const d = JSON.parse(data.toString('utf8'));
+                    switch (d.msg) {
+                        case 'send_hash':
+                            socket.send(JSON.stringify({
+                                fn_index: 31,
+                                session_hash,
+                            }));
+                            break;
+                        
+                        case 'send_data':
+                            socket.send(JSON.stringify({
+                                fn_index: 31,
+                                session_hash,
+                                data: [style, prompt, negativePrompt, scale, ''],
+                            }));
+                            break;
+                        
+                        case 'process_completed':
+                            socket.close();
+                            if (d.output && d.output.data && d.output.data[0] && d.output.data[0][0]) {
+                                const imageUrl = d.output.data[0][0].name;
+                                // Download the image as buffer
+                                const response = await axios.get(imageUrl, {
+                                    responseType: 'arraybuffer'
+                                });
+                                resolve(Buffer.from(response.data, 'binary'));
+                            } else {
+                                reject(new Error('Invalid response format from server'));
+                            }
+                            break;
+                        
+                        case 'error':
+                            socket.close();
+                            reject(new Error(d.error || 'Unknown error occurred'));
+                            break;
+                        
+                        default:
+                            // Ignore other message types
+                            break;
+                    }
+                } catch (parseError) {
+                    socket.close();
+                    reject(new Error(`Error processing server response: ${parseError.message}`));
+                }
+            });
+            
+            socket.on('error', (error) => {
+                socket.close();
+                reject(new Error(`WebSocket error: ${error.message}`));
+            });
+            
+            socket.on('close', () => {
+                console.log('WebSocket connection closed');
+            });
+            
+        } catch (error) {
+            reject(new Error(error.message));
+        }
+    });
 }
 
-module.exports = JHZrooArt;
+module.exports = aiart;
+
+// Example usage:
+// const fs = require('fs');
+// aiart('beautiful anime girl').then(buffer => {
+//     fs.writeFileSync('output.png', buffer);
+//     console.log('Image saved as output.png');
+// }).catch(console.error);
