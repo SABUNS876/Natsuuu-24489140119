@@ -42,7 +42,8 @@ async function buatBotWhatsApp(fitur, options = {}) {
   14. Await nya memakai sock kaya gini await.sock
   15. Pas mau pake api, Api nya langsung di campur ama case, soalnya tadi ku coba api nya di pisah ama case dan api nya harus nyatu ama case
   16. Semua fitur case yang ngga ada di dalem case sekarang fitur nya harus ada di dalem case semuanya jangan sampai di suruh mandiri soalnya engga ngerti sayanya trs harus sesuai request
-  17. Semua kode yang termasuk fitur dari case langsung di gabungin ke case jangan di pisah`;
+  17. Semua kode yang termasuk fitur dari case langsung di gabungin ke case jangan di pisah
+  18. Break; nya hanya ada 1 karena break; untuk akhiran case kalau break; nya ada 2 trs case nya cuma 1 berarti ngga bakal kebaca jadi break; nya hanya ada 1 buat akhiran case`;
 
   const promptPengguna = `Buatkan kode bot WhatsApp dengan fitur: ${fitur}`;
 
