@@ -177,6 +177,13 @@
       "name": "AI Tools",
       "items": [
         {
+          "name": "Create Fitur Case",
+          "desc": "Buat Fitur menggunakan AI",
+          "path": "/ai/ccase?fitur=",
+          "status": "ready",
+          "requireKey": false
+        },
+        {
           "name": "Generate Video",
           "desc": "Buat video menggunakan veo ai",
           "path": "/ai/veoai?prompt=",
