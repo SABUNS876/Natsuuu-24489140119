@@ -8,7 +8,7 @@ const cheerio = require('cheerio');
 async function veoScraper() {
   return {
     status: true,
-    message: "Coming Soon"
+    message: "Comming Soon - The release may take a little longer"
   };
 }
 
