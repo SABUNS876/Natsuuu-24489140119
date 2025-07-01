@@ -38,7 +38,7 @@ async function buatBotWhatsApp(fitur, options = {}) {
   10. Pastikan kode bisa dievaluasi langsung dengan eval() dan berfungsi dengan baik, sertakan semua dependensi yang diperlukan dalam kode
   11. Case nya terakirim sebagai 1 argumen jangan ada tambahan case lagi soalnya ada yang ngga ngerti
   12. Case nya jangan di pisah atau jangan ada 2 case tetapi hanya ada 1 case
-  13. Di dalam case ada cara penggunaan nya kalau cara penggunaan nya salah langsung di koreksi ama bot nya
+  13. Di dalam case ada cara penggunaan nya kalau cara penggunaan nya salah langsung di koreksi ama bot nya kalau mau pakai api tinggal taro web api nya dan kalau engga mau pakai api engga usah di taro web apapun yang penting prompt
   14. Await nya memakai sock kaya gini await.sock`;
 
   const promptPengguna = `Buatkan kode bot WhatsApp dengan fitur: ${fitur}`;
