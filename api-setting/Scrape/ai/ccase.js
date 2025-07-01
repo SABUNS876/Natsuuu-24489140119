@@ -8,13 +8,15 @@ const fetch = require("node-fetch");
  * @param {boolean} [options.stream=false] - Gunakan streaming response
  * @param {number} [options.timeout=15000] - Timeout dalam milidetik
  * @param {string} [options.bahasa='JavaScript'] - Bahasa pemrograman yang diinginkan
+ * @param {boolean} [options.eval=false] - Coba evaluasi kode langsung
  * @returns {Promise<object>} - Kode bot dan metadata
  */
 async function buatBotWhatsApp(fitur, options = {}) {
   const {
     stream = false,
     timeout = 15000,
-    bahasa = 'JavaScript'
+    bahasa = 'JavaScript',
+    eval = false
   } = options;
 
   // Validasi input
@@ -32,7 +34,8 @@ async function buatBotWhatsApp(fitur, options = {}) {
   6. Sertakan default case
   7. Hanya kembalikan kode tanpa penjelasan tambahan
   8. Buat implementasi nyata jangan contoh doang, buat sesuai yang aku katakan ingat harus nyata jangan contoh
-  9. fitur Nya hanya cjs ini salah satu contoh nya case 'halo': {\nm.reply('halo ada yang bisa saya bantu?')\n break; \n } dan kalau memakai api api nya di fetch dan buat versi lengkap, pakai bahasa indonesia penjelasan nya, jangan sampai error, buat sesuai request fitur nya trs jangan terlalu pendek kalau pake api buat fitur nya pertama tama di fetch dulu abis itu di sesuaiin ama apinya ingat harus lengkap dan harus sesuai request dan jangan terlalu pendek dan jangan ada error`;
+  9. fitur Nya hanya cjs ini salah satu contoh nya case 'halo': {\nm.reply('halo ada yang bisa saya bantu?')\n break; \n } dan kalau memakai api api nya di fetch dan buat versi lengkap, pakai bahasa indonesia penjelasan nya, jangan sampai error, buat sesuai request fitur nya trs jangan terlalu pendek kalau pake api buat fitur nya pertama tama di fetch dulu abis itu di sesuaiin ama apinya ingat harus lengkap dan harus sesuai request dan jangan terlalu pendek dan jangan ada error
+  10. Pastikan kode bisa dievaluasi langsung dengan eval() dan berfungsi dengan baik, sertakan semua dependensi yang diperlukan dalam kode`;
 
   const promptPengguna = `Buatkan kode bot WhatsApp dengan fitur: ${fitur}`;
 
@@ -75,12 +78,41 @@ async function buatBotWhatsApp(fitur, options = {}) {
     const result = await response.json();
     const kodeBot = result.choices[0].message.content;
 
+    // Evaluasi kode jika diminta
+    let evalResult = null;
+    if (eval && bahasa === 'JavaScript') {
+      try {
+        // Buat context aman untuk eval
+        const context = {
+          m: {
+            reply: (text) => text,
+            from: '6281234567890@s.whatsapp.net'
+          },
+          fetch: require('node-fetch'),
+          require: require
+        };
+        
+        // Jalankan kode dalam context terisolasi
+        evalResult = (new Function('context', `
+          with(context) {
+            ${kodeBot}
+          }
+        `))(context);
+      } catch (error) {
+        evalResult = {
+          error: error.message,
+          stack: error.stack
+        };
+      }
+    }
+
     return {
       sukses: true,
       kode: kodeBot,
       fitur: fitur.split(',').map(f => f.trim()),
       bahasa: bahasa,
-      waktu: new Date().toLocaleString('id-ID')
+      waktu: new Date().toLocaleString('id-ID'),
+      eval: eval ? evalResult : undefined
     };
 
   } catch (error) {
@@ -95,11 +127,15 @@ async function buatBotWhatsApp(fitur, options = {}) {
 // Contoh penggunaan:
 // buatBotWhatsApp('download YouTube, cek cuaca, chat AI', {
 //   bahasa: 'JavaScript',
-//   timeout: 20000
+//   timeout: 20000,
+//   eval: true
 // })
 // .then(response => {
 //   if (response.sukses) {
 //     console.log('Kode Bot:\n', response.kode);
+//     if (response.eval) {
+//       console.log('Hasil Eval:', response.eval);
+//     }
 //   } else {
 //     console.error('Gagal:', response.error);
 //   }
