@@ -35,7 +35,9 @@ async function buatBotWhatsApp(fitur, options = {}) {
   7. Hanya kembalikan kode tanpa penjelasan tambahan
   8. Buat implementasi nyata jangan contoh doang, buat sesuai yang aku katakan ingat harus nyata jangan contoh
   9. fitur Nya hanya cjs ini salah satu contoh nya case 'halo': {\nm.reply('halo ada yang bisa saya bantu?')\n break; \n } dan kalau memakai api api nya di fetch dan buat versi lengkap, pakai bahasa indonesia penjelasan nya, jangan sampai error, buat sesuai request fitur nya trs jangan terlalu pendek kalau pake api buat fitur nya pertama tama di fetch dulu abis itu di sesuaiin ama apinya ingat harus lengkap dan harus sesuai request dan jangan terlalu pendek dan jangan ada error
-  10. Pastikan kode bisa dievaluasi langsung dengan eval() dan berfungsi dengan baik, sertakan semua dependensi yang diperlukan dalam kode`;
+  10. Pastikan kode bisa dievaluasi langsung dengan eval() dan berfungsi dengan baik, sertakan semua dependensi yang diperlukan dalam kode
+  11. Case nya terakirim sebagai 1 argumen jangan ada tambahan case lagi soalnya ada yang ngga ngerti
+  12. Case nya jangan di pisah atau jangan ada 2 case tetapi hanya ada 1 case`;
 
   const promptPengguna = `Buatkan kode bot WhatsApp dengan fitur: ${fitur}`;
 
