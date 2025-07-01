@@ -8,8 +8,7 @@ const cheerio = require('cheerio');
 async function veoScraper() {
   return {
     status: true,
-    message: "Coming Soon",
-    message²: "Sabar aja buat yang make apiku"
+    message: "Coming Soon"
   };
 }
 
