@@ -31,7 +31,7 @@ async function buatBotWhatsApp(fitur, options = {}) {
   5. Format kode dengan indentasi rapi
   6. Sertakan default case
   7. Hanya kembalikan kode tanpa penjelasan tambahan
-  8. Switch Case Berawalan Dengan case 'contoh': { berakhiran dengan break; }`;
+  8. Buat implementasi nyata jangan contoh doang, buat sesuai yang aku katakan ingat harus nyata jangan contoh`;
 
   const promptPengguna = `Buatkan kode bot WhatsApp dengan fitur: ${fitur}`;
 
