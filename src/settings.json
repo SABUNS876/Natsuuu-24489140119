@@ -177,6 +177,13 @@
       "name": "AI Tools",
       "items": [
         {
+          "name": "Image To Ghibli",
+          "desc": "Ubah Image Mu Menjadi Ghibli",
+          "path": "/ai/image2ghibli?url=&prompt=",
+          "status": "ready",
+          "requireKey": false
+        },
+        {
           "name": "Create Fitur Case",
           "desc": "Buat Fitur menggunakan AI",
           "path": "/ai/ccase?fitur=",
