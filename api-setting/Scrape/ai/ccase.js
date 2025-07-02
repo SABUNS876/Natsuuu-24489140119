@@ -84,25 +84,7 @@ const promptSistem = `Anda adalah ahli pembuat bot WhatsApp. Buatkan kode switch
    - 1 case = 1 break di akhir
    - Error handling wajib
    - Kode harus jalan langsung`;
-
-// Contoh implementasi salah (DILARANG):
-// case 'salah': {
-//   if (x) {
-//     break; // BREAK DILARANG DISINI
-//   }
-//   break; // INI JUGA BREAK
-// }
-
-// Contoh implementasi benar:
-// case 'benar': {
-//   try {
-//     // semua kode disini
-//   } catch (e) {
-//     // handle error
-//   }
-//   break; // HANYA 1 BREAK DISINI
-// }
-
+  
   const promptPengguna = `Buatkan kode bot WhatsApp dengan fitur: ${fitur}`;
 
   const url = 'https://text.pollinations.ai/openai';
