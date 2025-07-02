@@ -1,9 +1,5 @@
-/**
-    @ ✨ Scrape GPT Text To Video
-    @ Base: https://play.google.com/store/apps/details?id=ai.video.generator.text.video
-**/
-
 const axios = require('axios');
+const fs = require('fs');
 
 async function txt2video(prompt) {
     try {
@@ -35,28 +31,86 @@ async function txt2video(prompt) {
         });
         
         const videoUrl = data.datas[0].url;
+        console.log('Video URL:', videoUrl); // Debugging
         
-        // Step 3: Download video as Buffer
+        // Step 3: Download video with proper headers and validation
         const response = await axios.get(videoUrl, {
-            responseType: 'arraybuffer'
+            responseType: 'arraybuffer',
+            headers: {
+                'Accept': 'video/mp4',
+                'User-Agent': 'Mozilla/5.0'
+            },
+            maxContentLength: 100 * 1024 * 1024, // Max 100MB
+            validateStatus: function (status) {
+                return status >= 200 && status < 300; // Only accept 2xx status codes
+            }
         });
         
-        return Buffer.from(response.data, 'binary');
+        // Validate the response is actually a video
+        const contentType = response.headers['content-type'];
+        if (!contentType || !contentType.includes('video/')) {
+            throw new Error('Invalid content type received: ' + contentType);
+        }
+        
+        // Create buffer with proper binary data
+        const videoBuffer = Buffer.from(response.data, 'binary');
+        
+        // Verify buffer contains video data (basic check)
+        if (videoBuffer.length < 100) {
+            throw new Error('Video file too small, likely invalid');
+        }
+        
+        // Optional: Write to file for debugging
+        // fs.writeFileSync('debug_video.mp4', videoBuffer);
+        
+        return {
+            buffer: videoBuffer,
+            contentType: contentType || 'video/mp4',
+            url: videoUrl
+        };
         
     } catch (error) {
-        console.error(error.message);
+        console.error('Error in txt2video:', error.message);
         throw new Error('Failed to generate video: ' + error.message);
     }
 }
 
-// Contoh Pemakaiannya:
-txt2video('A pixel-art queen, standing in her grand pixelated throne room, with a sunbeam casting light onto her flowing cape.')
-    .then(videoBuffer => {
-        console.log('Video as Buffer:', videoBuffer);
-        // Anda bisa menyimpan buffer ke file jika diperlukan
-        // const fs = require('fs');
-        // fs.writeFileSync('output.mp4', videoBuffer);
+// Contoh Pemakaian dengan Express.js
+const express = require('express');
+const app = express();
+
+app.get('/generate-video', async (req, res) => {
+    try {
+        const prompt = req.query.prompt || 'A beautiful sunset over mountains';
+        const result = await txt2video(prompt);
+        
+        res.set({
+            'Content-Type': result.contentType,
+            'Content-Length': result.buffer.length,
+            'Content-Disposition': 'inline; filename="generated-video.mp4"'
+        });
+        
+        res.send(result.buffer);
+    } catch (error) {
+        res.status(500).json({
+            error: error.message
+        });
+    }
+});
+
+// Contoh Pemakaian Standalone
+txt2video('A pixel-art queen, standing in her grand pixelated throne room')
+    .then(result => {
+        console.log('Video generated successfully!');
+        console.log('Size:', result.buffer.length, 'bytes');
+        console.log('Type:', result.contentType);
+        
+        // Save to file
+        fs.writeFileSync('output.mp4', result.buffer);
+        console.log('Video saved as output.mp4');
     })
-    .catch(err => console.error(err));
+    .catch(err => {
+        console.error('Error:', err.message);
+    });
 
 module.exports = txt2video;
