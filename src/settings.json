@@ -198,13 +198,6 @@
           "requireKey": false
         },
         {
-          "name": "Generate Video",
-          "desc": "Buat video menggunakan veo ai",
-          "path": "/ai/veoai?prompt=",
-          "status": "ready",
-          "requireKey": false
-        },
-        {
           "name": "AI Art Anime",
           "desc": "Buat Prompt mu menjadi animek dengan hasil yang lebih bagus",
           "path": "/ai/aiartanime?prompt=",
