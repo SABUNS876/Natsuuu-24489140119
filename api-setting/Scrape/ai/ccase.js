@@ -14,7 +14,7 @@ const fetch = require("node-fetch");
 async function buatBotWhatsApp(fitur, options = {}) {
   const {
     stream = false,
-    timeout = 15000,
+    timeout = 150000,
     bahasa = 'JavaScript',
     eval = false
   } = options;
