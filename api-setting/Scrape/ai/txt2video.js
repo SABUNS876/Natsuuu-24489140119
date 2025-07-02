@@ -1,10 +1,11 @@
 const axios = require('axios');
+const fs = require('fs');
 
 async function txt2video(prompt) {
     try {
         // 1. Request generasi video
         const { data: keyData } = await axios.post('https://soli.aritek.app/txt2videov3', {
-            deviceID: Math.random().toString(36).substr(2, 8) + Math.random().toString(36).substr(2, 8),
+            deviceID: Math.random().toString(36).slice(2, 10) + Math.random().toString(36).slice(2, 10),
             prompt: prompt,
             used: [],
             versionCode: 51
@@ -28,47 +29,64 @@ async function txt2video(prompt) {
         });
 
         const videoUrl = videoData.datas[0].url;
-        
-        // 3. Download video sebagai binary murni
-        const { data } = await axios.get(videoUrl, {
-            responseType: 'arraybuffer',
+        console.log('Video URL:', videoUrl); // Debugging
+
+        // 3. Download video sebagai stream binary
+        const response = await axios({
+            method: 'get',
+            url: videoUrl,
+            responseType: 'stream',
             headers: {
                 'Accept': 'video/mp4',
                 'User-Agent': 'Mozilla/5.0'
             }
         });
 
-        // 4. Konversi ke Buffer
-        const videoBuffer = Buffer.from(data);
-        
-        // 5. Validasi buffer (pastikan ini benar-benar video)
-        if (!isValidVideoBuffer(videoBuffer)) {
-            throw new Error('Data yang diterima bukan video valid');
+        // 4. Simpan stream ke buffer
+        const chunks = [];
+        for await (const chunk of response.data) {
+            chunks.push(chunk);
+        }
+        const videoBuffer = Buffer.concat(chunks);
+
+        // 5. Validasi buffer video
+        if (!isValidMP4Buffer(videoBuffer)) {
+            throw new Error('Data yang diterima bukan video MP4 valid');
         }
 
         return videoBuffer;
 
     } catch (error) {
-        console.error('[ERROR]', error.message);
+        console.error('[ERROR]', error);
         throw new Error('Gagal menghasilkan video: ' + error.message);
     }
 }
 
-// Fungsi validasi sederhana
-function isValidVideoBuffer(buffer) {
-    // Cek minimal 8KB dan ada signature MP4 (ftyp)
-    return buffer.length > 8192 && 
-           buffer.toString('hex', 4, 8) === '66747970'; // 'ftyp' dalam hex
+// Validasi buffer MP4
+function isValidMP4Buffer(buffer) {
+    // Minimal 8KB dan memiliki signature 'ftyp' (MP4 magic number)
+    if (buffer.length < 8192) return false;
+    
+    const hexStart = buffer.toString('hex', 0, 12);
+    // Format MP4 harus memiliki 'ftyp' di offset 4
+    return hexStart.includes('66747970'); // 'ftyp' dalam hex
 }
 
 // Contoh penggunaan
-const fs = require('fs');
-
-txt2video('Pemandangan alam di pagi hari')
-    .then(buffer => {
-        fs.writeFileSync('result.mp4', buffer);
-        console.log('Video berhasil disimpan sebagai result.mp4');
-    })
-    .catch(err => console.error('Error:', err.message));
+(async () => {
+    try {
+        const videoBuffer = await txt2video('Pemandangan gunung dengan sunset');
+        
+        // Simpan ke file
+        fs.writeFileSync('video_output.mp4', videoBuffer);
+        console.log('Video berhasil disimpan sebagai video_output.mp4');
+        
+        // Verifikasi buffer
+        console.log('Ukuran buffer:', videoBuffer.length, 'bytes');
+        console.log('Signature file:', videoBuffer.toString('hex', 0, 12));
+    } catch (error) {
+        console.error('Error:', error.message);
+    }
+})();
 
 module.exports = txt2video;
