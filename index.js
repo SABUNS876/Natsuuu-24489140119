@@ -14,6 +14,18 @@ app.use('/src', express.static('src'));
 
 const apiConfig = require('./src/settings.json');
 
+// Add video content type helper (NEW)
+const getVideoContentType = (url) => {
+    const extension = url.split('.').pop().toLowerCase();
+    switch (extension) {
+        case 'mp4': return 'video/mp4';
+        case 'webm': return 'video/webm';
+        case 'mov': return 'video/quicktime';
+        case 'avi': return 'video/x-msvideo';
+        default: return 'video/mp4';
+    }
+};
+
 const loadScrapers = () => {
     const scrapers = {};
     const endpointConfigs = {};
@@ -125,6 +137,22 @@ const handleMediaFromUrl = async (req, res, next) => {
         }
     }
     
+    // Add video URL handling (NEW)
+    if (req.body && req.body.videoUrl) {
+        try {
+            const response = await axios.get(req.body.videoUrl, {
+                responseType: 'arraybuffer'
+            });
+            
+            req.video = {
+                buffer: Buffer.from(response.data, 'binary'),
+                contentType: response.headers['content-type'] || getVideoContentType(req.body.videoUrl)
+            };
+        } catch (error) {
+            console.error('Error fetching video from URL:', error);
+        }
+    }
+    
     next();
 };
 
@@ -136,7 +164,7 @@ const getAudioContentType = (url) => {
         case 'wav': return 'audio/wav';
         case 'ogg': return 'audio/ogg';
         case 'm4a': return 'audio/mp4';
-        default: return 'audio/mpeg'; // default to mp3
+        default: return 'audio/mpeg';
     }
 };
 
@@ -152,7 +180,7 @@ Object.entries(scrapers).forEach(([route, { handler, config }]) => {
                     .filter(key => key !== 'apikey')
                     .map(key => req.query[key]);
             } else {
-                params = [req.image || req.audio || req.body]; // Gunakan image/audio jika ada
+                params = [req.image || req.audio || req.video || req.body]; // Add req.video
             }
             
             const result = await handler(...params);
@@ -169,17 +197,27 @@ Object.entries(scrapers).forEach(([route, { handler, config }]) => {
                 return res.send(result.audioBuffer);
             }
             
-            // Handle direct buffer (check if it's audio by route extension)
+            // Add video response handling (NEW)
+            if (result && result.videoBuffer && result.contentType) {
+                res.set('Content-Type', result.contentType);
+                return res.send(result.videoBuffer);
+            }
+            
+            // Handle direct buffer (extended for video)
             if (Buffer.isBuffer(result)) {
                 if (route.match(/\.(mp3|wav|ogg|m4a)$/i)) {
                     res.set('Content-Type', getAudioContentType(route));
-                } else {
-                    res.set('Content-Type', 'image/jpeg'); // Default for images
+                } 
+                else if (route.match(/\.(mp4|webm|mov|avi)$/i)) {
+                    res.set('Content-Type', getVideoContentType(route));
+                }
+                else {
+                    res.set('Content-Type', 'image/jpeg');
                 }
                 return res.send(result);
             }
             
-            // Handle URL responses (both image and audio)
+            // Handle URL responses (extended for video)
             if (result && typeof result === 'object' && result.url) {
                 try {
                     // Check if it's an image URL
@@ -198,9 +236,16 @@ Object.entries(scrapers).forEach(([route, { handler, config }]) => {
                         res.set('Content-Type', audioResponse.headers['content-type'] || getAudioContentType(result.url));
                         return res.send(Buffer.from(audioResponse.data, 'binary'));
                     }
+                    // Add video URL handling (NEW)
+                    else if (result.url.match(/\.(mp4|webm|mov|avi)$/i)) {
+                        const videoResponse = await axios.get(result.url, {
+                            responseType: 'arraybuffer'
+                        });
+                        res.set('Content-Type', videoResponse.headers['content-type'] || getVideoContentType(result.url));
+                        return res.send(Buffer.from(videoResponse.data, 'binary'));
+                    }
                 } catch (error) {
                     console.error('Error fetching media URL from result:', error);
-                    // Fallback ke JSON response jika gagal mengambil media
                     return res.json({
                         status: true,
                         creator: apiConfig.apiSettings.creator,
