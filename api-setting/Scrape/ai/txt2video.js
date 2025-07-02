@@ -31,58 +31,56 @@ async function txt2video(prompt) {
         });
         
         const videoUrl = data.datas[0].url;
-        console.log('Video URL:', videoUrl); // Debugging
-        
-        // Step 3: Download video with proper headers and validation
-        const response = await axios.get(videoUrl, {
-            responseType: 'arraybuffer',
+        console.log('Video URL:', videoUrl);
+
+        // Step 3: Download video as binary stream
+        const response = await axios({
+            method: 'get',
+            url: videoUrl,
+            responseType: 'stream', // Menggunakan stream untuk data binary
             headers: {
-                'Accept': 'video/mp4',
+                'Accept': 'video/mp4, video/webm, video/*',
                 'User-Agent': 'Mozilla/5.0'
-            },
-            maxContentLength: 100 * 1024 * 1024, // Max 100MB
-            validateStatus: function (status) {
-                return status >= 200 && status < 300; // Only accept 2xx status codes
             }
         });
-        
-        // Validate the response is actually a video
-        const contentType = response.headers['content-type'];
-        if (!contentType || !contentType.includes('video/')) {
-            throw new Error('Invalid content type received: ' + contentType);
+
+        // Simpan stream ke buffer
+        const chunks = [];
+        for await (const chunk of response.data) {
+            chunks.push(chunk);
         }
-        
-        // Create buffer with proper binary data
-        const videoBuffer = Buffer.from(response.data, 'binary');
-        
-        // Verify buffer contains video data (basic check)
-        if (videoBuffer.length < 100) {
-            throw new Error('Video file too small, likely invalid');
+        const videoBuffer = Buffer.concat(chunks);
+
+        // Verifikasi buffer
+        if (!videoBuffer || videoBuffer.length < 100) {
+            throw new Error('Invalid video data received');
         }
-        
-        // Optional: Write to file for debugging
-        // fs.writeFileSync('debug_video.mp4', videoBuffer);
-        
+
+        // Cek signature file MP4 (magic number)
+        const magicNumber = videoBuffer.toString('hex', 0, 8);
+        if (!magicNumber.match(/^000000[0-9a-f]{2}66747970/)) {
+            throw new Error('Invalid MP4 file format');
+        }
+
         return {
             buffer: videoBuffer,
-            contentType: contentType || 'video/mp4',
+            contentType: response.headers['content-type'] || 'video/mp4',
             url: videoUrl
         };
-        
+
     } catch (error) {
-        console.error('Error in txt2video:', error.message);
+        console.error('Error in txt2video:', error);
         throw new Error('Failed to generate video: ' + error.message);
     }
 }
 
-// Contoh Pemakaian dengan Express.js
+// Contoh penggunaan dengan Express
 const express = require('express');
 const app = express();
 
-app.get('/generate-video', async (req, res) => {
+app.get('/video', async (req, res) => {
     try {
-        const prompt = req.query.prompt || 'A beautiful sunset over mountains';
-        const result = await txt2video(prompt);
+        const result = await txt2video(req.query.prompt || 'A beautiful landscape');
         
         res.set({
             'Content-Type': result.contentType,
@@ -92,25 +90,16 @@ app.get('/generate-video', async (req, res) => {
         
         res.send(result.buffer);
     } catch (error) {
-        res.status(500).json({
-            error: error.message
-        });
+        res.status(500).json({ error: error.message });
     }
 });
 
-// Contoh Pemakaian Standalone
-txt2video('A pixel-art queen, standing in her grand pixelated throne room')
+// Contoh penggunaan langsung
+txt2video('A futuristic city at night')
     .then(result => {
-        console.log('Video generated successfully!');
-        console.log('Size:', result.buffer.length, 'bytes');
-        console.log('Type:', result.contentType);
-        
-        // Save to file
         fs.writeFileSync('output.mp4', result.buffer);
         console.log('Video saved as output.mp4');
     })
-    .catch(err => {
-        console.error('Error:', err.message);
-    });
+    .catch(console.error);
 
 module.exports = txt2video;
