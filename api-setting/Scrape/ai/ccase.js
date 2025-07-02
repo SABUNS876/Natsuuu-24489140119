@@ -24,67 +24,53 @@ async function buatBotWhatsApp(fitur, options = {}) {
     throw new Error('Deskripsi fitur harus berupa teks');
   }
 
-// Prompt sistem dalam Bahasa Indonesia
-const promptSistem = `Anda adalah ahli pembuat bot WhatsApp. Buatkan kode switch-case dalam ${bahasa} untuk bot WhatsApp dengan ketentuan:
+  // Prompt sistem dalam Bahasa Indonesia
+  const promptSistem = `Anda adalah ahli pembuat bot WhatsApp. Buatkan kode switch-case dalam ${bahasa} untuk bot WhatsApp dengan ketentuan:
 
-1. STRUKTUR CASE:
-   - Hanya boleh ada 1 break di akhir case
-   - Tidak boleh ada break di tengah-tengah case
-   - Contoh struktur:
-     case 'contoh': {
-       // [semua kode disini]
-       break; // Hanya ini satu-satunya break
-     }
+1. STRUKTUR UTAMA:
+   - Gunakan pattern: case 'fitur': { [kode] break; }
+   - Hanya 1 break di akhir case
+   - Tidak boleh ada early break
 
-2. IMPLEMENTASI NYATA:
-   - Wajib buat implementasi lengkap, bukan contoh
+2. IMPLEMENTASI:
+   - Kode harus lengkap dan langsung jalan
    - Sertakan semua dependensi dalam case
-   - Pakai bahasa Indonesia untuk komentar
+   - Komentar bahasa Indonesia
 
-3. PENANGANAN ERROR:
-   - Gunakan try-catch di dalam case
-   - Return error message ke user
-   - Log error ke console
+3. FITUR WAJIB:
+   ${fitur.split(',').map(f => `- ${f.trim()}`).join('\n   ')}
 
-4. FORMAT PESAN:
-   - Untuk reply text biasa:
-     await m.reply('pesan')
-   - Untuk reply interaktif:
-     await m.reply({
-       text: 'judul',
-       footer: 'footer',
-       buttons: [ /* tombol */ ]
-     })
-
-5. FITUR KHUSUS:
-   - API: Langsung embed dalam case
-   - Media: Sertakan upload & cleanup
-   - Premium: Cek limit user
-
-6. CONTOH CASE BENAR:
-   case 'halo': {
+4. CONTOH STRUCTURE:
+   case 'contoh': {
      try {
-       if (!text) return m.reply('Contoh: .halo [nama]');
+       // Validasi
+       if (!text) return m.reply('Cara pakai: .contoh [param]');
        
-       await m.reply(`Halo ${text}!`);
+       // Proses utama
+       const res = await fetch('https://api.example.com');
+       const data = await res.json();
+       
+       // Kirim hasil
+       await m.reply(JSON.stringify(data));
      } catch (e) {
        console.error(e);
-       m.reply('Error terjadi');
+       m.reply('Error memproses');
      }
-     break; // Hanya 1 break di sini
+     break; // SATU-SATUNYA BREAK
    }
 
-7. LARANGAN:
+5. ATURAN KHUSUS:
+   - API: Langsung embed dalam case
+   - Media: Upload & cleanup
+   - Premium: Cek limit user
+   - Queue: Antrian proses
+   - Error handling wajib
+
+6. LARANGAN:
    - Jangan buat break ganda
    - Jangan pisah case
-   - Jangan lupa cleanup resource
-   - Jangan tinggalkan TODO
+   - Jangan lupa cleanup`;
 
-8. PRIORITAS:
-   - 1 case = 1 break di akhir
-   - Error handling wajib
-   - Kode harus jalan langsung`;
-  
   const promptPengguna = `Buatkan kode bot WhatsApp dengan fitur: ${fitur}`;
 
   const url = 'https://text.pollinations.ai/openai';
@@ -124,23 +110,35 @@ const promptSistem = `Anda adalah ahli pembuat bot WhatsApp. Buatkan kode switch
     }
 
     const result = await response.json();
-    const kodeBot = result.choices[0].message.content;
+    let kodeBot = result.choices[0].message.content;
+
+    // Validasi kode
+    if (!kodeBot.includes('break;') || (kodeBot.match(/break;/g) || []).length > 1) {
+      kodeBot = kodeBot.replace(/break;.*break;/gs, 'break;');
+    }
 
     // Evaluasi kode jika diminta
     let evalResult = null;
     if (eval && bahasa === 'JavaScript') {
       try {
-        // Buat context aman untuk eval
         const context = {
           m: {
             reply: (text) => text,
-            from: '6281234567890@s.whatsapp.net'
+            from: '6281234567890@s.whatsapp.net',
+            react: async (emoji) => console.log('React:', emoji)
+          },
+          sock: {
+            sendMessage: async () => console.log('Message sent'),
+            waUploadToServer: async () => 'mock-url'
           },
           fetch: require('node-fetch'),
-          require: require
+          require: require,
+          fs: require('fs'),
+          path: require('path'),
+          FormData: require('form-data'),
+          axios: require('axios')
         };
         
-        // Jalankan kode dalam context terisolasi
         evalResult = (new Function('context', `
           with(context) {
             ${kodeBot}
@@ -171,22 +169,5 @@ const promptSistem = `Anda adalah ahli pembuat bot WhatsApp. Buatkan kode switch
     };
   }
 }
-
-// Contoh penggunaan:
-// buatBotWhatsApp('download YouTube, cek cuaca, chat AI', {
-//   bahasa: 'JavaScript',
-//   timeout: 20000,
-//   eval: true
-// })
-// .then(response => {
-//   if (response.sukses) {
-//     console.log('Kode Bot:\n', response.kode);
-//     if (response.eval) {
-//       console.log('Hasil Eval:', response.eval);
-//     }
-//   } else {
-//     console.error('Gagal:', response.error);
-//   }
-// });
 
 module.exports = buatBotWhatsApp;
