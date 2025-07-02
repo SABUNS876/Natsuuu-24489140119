@@ -24,7 +24,7 @@ async function buatBotWhatsApp(fitur, options = {}) {
     throw new Error('Deskripsi fitur harus berupa teks');
   }
 
-  // Prompt sistem dalam Bahasa Indonesia
+// Prompt sistem dalam Bahasa Indonesia
 const promptSistem = `Anda adalah ahli pembuat bot WhatsApp. Buatkan kode switch-case dalam ${bahasa} untuk bot WhatsApp dengan ketentuan:
 1. Gunakan sintaks switch-case yang benar
 2. Sertakan semua fitur yang diminta
@@ -130,13 +130,77 @@ const promptSistem = `Anda adalah ahli pembuat bot WhatsApp. Buatkan kode switch
 29. Untuk case dengan relayMessage:
    - Gunakan sock.relayMessage untuk mengirim
    - Sertakan messageId yang unik
-30. Tetap pertahankan:
+30. Untuk case pengolahan gambar (seperti hd):
+   - Validasi tipe media (hanya image)
+   - Implementasikan sistem limit/premium
+   - Gunakan queue system untuk antrian proses
+   - Sediakan multiple enhancement methods
+   - Buat tombol interaktif untuk pilihan scale
+   - Upload hasil ke image hosting
+   - Sertakan react indicator (🕒, ✅, ❌)
+   - Bersihkan temporary files
+31. Struktur case pengolahan gambar:
+   case 'hd': {
+       // 1. Validasi
+       if (!isPremium && limit < 1) return reply('Limit habis');
+       if (user in queue) return reply('Masih diproses');
+       
+       // 2. Setup
+       queue[user] = true;
+       try {
+           // 3. Get media
+           let media = await getMedia();
+           if (!media) return reply('Kirim gambar');
+           
+           // 4. Processing
+           await m.react('🕒');
+           let result = await processImage(media);
+           
+           // 5. Send result
+           await sendEnhancedImage(result);
+           await m.react('✅');
+           
+       } catch (error) {
+           console.error(error);
+           reply('Gagal memproses');
+           await m.react('❌');
+       } finally {
+           // 6. Cleanup
+           delete queue[user];
+           if (!isPremium) limit -= 1;
+           cleanTempFiles();
+       }
+       break;
+   }
+32. Untuk image enhancement:
+   - Gunakan multiple methods (upscale + remini)
+   - Sediakan opsi scale (2x, 4x, 6x)
+   - Buat interactive buttons dengan:
+     * Tombol utama pilihan scale
+     * Template buttons untuk menu
+     * Native flow info
+   - Sertakan externalAdReply dengan:
+     * Thumbnail hasil
+     * Nama bot
+     * Media type 1
+33. Untuk premium system:
+   - Cek status premium
+   - Kelola limit penggunaan
+   - Sediakan opsi upgrade
+34. Untuk queue system:
+   - Track user yang sedang proses
+   - Beri pesan "masih diproses"
+   - Bersihkan queue setelah selesai
+35. Untuk temporary files:
+   - Buat di folder temp
+   - Nama file unik
+   - Auto cleanup
+36. Tetap pertahankan:
    - 1 break di akhir case
-   - Struktur try-catch
-   - Formatting yang konsisten
-   - Komentar penjelasan singkat
-   - Error handling yang jelas
-   - Feedback ke pengguna`;
+   - Struktur try-catch-finally
+   - Komentar penjelasan
+   - Error handling
+   - Feedback ke user`;
 
   const promptPengguna = `Buatkan kode bot WhatsApp dengan fitur: ${fitur}`;
 
