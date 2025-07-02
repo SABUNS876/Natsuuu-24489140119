@@ -346,6 +346,13 @@
       "name": "Tools",
       "items": [
         {
+          "name": "Upscaler",
+          "desc": "Tingkatkan Grafik fotomu menggunakan upscale",
+          "path": "/tools/upscale?url=",
+          "status": "ready",
+          "requireKey": false
+        },
+        {
           "name": "Weather",
           "desc": "Cek Cuaca Sekitar",
           "path": "/tools/weather?city=",
