@@ -8,7 +8,7 @@ const axios = require('axios');
 const FormData = require('form-data');
 
 async function imglarger(imageInput, options = {}) {
-    const { scale = '2', type = 'upscale' } = options;
+    const { scale = '4', type = 'upscale' } = options;
     
     const config = {
         scales: ['2', '4'],
