@@ -1,96 +1,134 @@
-const { randomInt } = require('crypto');
+const axios = require('axios');
 
-// Simulasi data Vercel - waktu terakhir deploy (ini bisa diisi dengan waktu deploy sebenarnya)
-const vercelData = {
-  lastDeployTime: new Date(), // Ini akan diisi waktu deploy terakhir
-  totalRequests: 0,
-  status: 'active',
-  // Simulasi downtime Vercel (dalam menit)
-  simulatedDowntimes: [
-    { date: '2023-01-15', duration: 5 }, // Contoh downtime 5 menit
-    { date: '2023-02-20', duration: 10 }
-  ]
-};
-
-// Inisialisasi waktu deploy (bisa diganti dengan waktu deploy sebenarnya)
-// Untuk produksi, bisa menggunakan process.env.VERCEL_DEPLOYMENT_CREATED_AT
-vercelData.lastDeployTime = process.env.VERCEL_DEPLOYMENT_CREATED_AT ? 
-  new Date(process.env.VERCEL_DEPLOYMENT_CREATED_AT) : 
-  new Date();
-
-// Format uptime dengan memperhitungkan simulated downtimes
-function formatVercelUptime() {
-  try {
-    const now = new Date();
-    const totalUptimeMs = now - vercelData.lastDeployTime;
-    
-    // Hitung total downtime dari simulasi
-    let totalDowntimeMs = 0;
-    vercelData.simulatedDowntimes.forEach(downtime => {
-      const downtimeDate = new Date(downtime.date);
-      if (downtimeDate >= vercelData.lastDeployTime) {
-        totalDowntimeMs += downtime.duration * 60 * 1000;
-      }
-    });
-    
-    const uptimeMs = totalUptimeMs - totalDowntimeMs;
-    const uptimeSeconds = Math.floor(uptimeMs / 1000);
-    
-    // Hitung uptime percentage (99.9% sebagai default)
-    const uptimePercentage = ((uptimeMs / totalUptimeMs) * 100).toFixed(3);
-    
-    // Format ke days, hours, minutes, seconds
-    const days = Math.floor(uptimeSeconds / 86400);
-    const hours = Math.floor((uptimeSeconds % 86400) / 3600);
-    const minutes = Math.floor((uptimeSeconds % 3600) / 60);
-    const seconds = uptimeSeconds % 60;
-    
-    return {
-      formatted: `${days}d ${hours}h ${minutes}m ${seconds}s`,
-      percentage: uptimePercentage >= 99.9 ? '99.9%' : `${uptimePercentage}%`,
-      since: vercelData.lastDeployTime.toISOString()
+class StatusApi {
+  constructor() {
+    this.stats = {
+      lastChecked: null,
+      status: 'unknown',
+      totalRequests: 0,
+      uniqueUsers: new Set(),
+      responseTimes: [],
+      errorCount: 0,
+      firstChecked: new Date()
     };
-  } catch (err) {
+
+    // Mulai pemantauan otomatis
+    this.startMonitoring();
+  }
+
+  async checkApiStatus() {
+    try {
+      const startTime = Date.now();
+      // Cek root URL langsung
+      const response = await axios.get('https://api.natsuclouds.biz.id', {
+        timeout: 5000
+      });
+      const responseTime = Date.now() - startTime;
+
+      // Tentukan status berdasarkan response
+      let status = 'operational';
+      if (response.status >= 500) {
+        status = 'down';
+      } else if (response.status >= 400) {
+        status = 'degraded';
+      }
+
+      this.stats = {
+        ...this.stats,
+        lastChecked: new Date(),
+        status: status,
+        responseTimes: [...this.stats.responseTimes.slice(-99), responseTime]
+      };
+
+      return {
+        success: true,
+        status: this.stats.status,
+        responseTime,
+        statusCode: response.status
+      };
+    } catch (error) {
+      this.stats.errorCount++;
+      this.stats.status = 'down';
+      
+      return {
+        success: false,
+        status: 'down',
+        error: error.message,
+        statusCode: error.response?.status || 0
+      };
+    }
+  }
+
+  calculateUptime() {
+    const uptimeMs = new Date() - this.stats.firstChecked;
+    const seconds = Math.floor(uptimeMs / 1000);
+    
     return {
-      formatted: '0d 0h 0m 0s',
-      percentage: '0%',
-      since: new Date().toISOString()
+      days: Math.floor(seconds / 86400),
+      hours: Math.floor((seconds % 86400) / 3600),
+      minutes: Math.floor((seconds % 3600) / 60),
+      seconds: seconds % 60,
+      ms: uptimeMs
     };
   }
-}
 
-// Main monitoring function
-function getVercelStats() {
-  try {
-    // Increment request count
-    vercelData.totalRequests++;
+  getUptimePercentage() {
+    if (this.stats.totalRequests === 0) return 100;
+    return ((this.stats.totalRequests - this.stats.errorCount) / this.stats.totalRequests) * 100;
+  }
 
-    const uptime = formatVercelUptime();
+  async getStats(userId = null) {
+    this.stats.totalRequests++;
+    
+    if (userId) {
+      this.stats.uniqueUsers.add(userId);
+    }
+
+    const statusCheck = await this.checkApiStatus();
+    const uptime = this.calculateUptime();
+    const avgResponseTime = this.stats.responseTimes.length > 0
+      ? (this.stats.responseTimes.reduce((a, b) => a + b, 0) / this.stats.responseTimes.length)
+      : 0;
 
     return {
       author: 'Ramadhan - Tampan',
-      apiCount: 32,
-      uptime: uptime.formatted,
-      uptimePercentage: uptime.percentage,
-      status: vercelData.status,
-      sinceLastDeploy: uptime.since,
-      vercelStatus: 'operational' // Biasanya Vercel operational
+      apiStatus: this.stats.status,
+      uptime: `${uptime.days}d ${uptime.hours}h ${uptime.minutes}m ${uptime.seconds}s`,
+      uptimePercentage: `${this.getUptimePercentage().toFixed(2)}%`,
+      lastChecked: this.stats.lastChecked?.toISOString() || 'Never',
+      totalRequests: this.stats.totalRequests,
+      uniqueUsers: this.stats.uniqueUsers.size,
+      averageResponseTime: `${avgResponseTime.toFixed(2)}ms`,
+      errorCount: this.stats.errorCount,
+      isOperational: this.stats.status === 'operational',
+      lastStatusCode: statusCheck.statusCode || 'N/A'
     };
-  } catch (err) {
-    return {
-      error: 'Failed to get Vercel stats',
-      apiCount: 30,
-      uptime: '0d 0h 0m 0s',
-      status: 'unknown',
-      totalRequests: 0
-    };
+  }
+
+  startMonitoring(interval = 60000) {
+    // Jalankan pemeriksaan pertama
+    this.checkApiStatus();
+    
+    // Set interval untuk pemantauan berkala
+    this.monitoringInterval = setInterval(() => {
+      this.checkApiStatus();
+    }, interval);
+  }
+
+  stopMonitoring() {
+    if (this.monitoringInterval) {
+      clearInterval(this.monitoringInterval);
+    }
+  }
+
+  // Middleware untuk tracking request
+  trackRequest(req, res, next) {
+    const userId = req.headers['x-user-id'] || req.ip;
+    req.userId = userId;
+    next();
   }
 }
 
-// Status change simulation
-setInterval(() => {
-  const statuses = ['active', 'degraded_performance'];
-  vercelData.status = statuses[randomInt(0, statuses.length)];
-}, 300000); // Changes every 5 minutes
-
-module.exports = getVercelStats;
+// Buat instance tunggal dan export
+const statusApiInstance = new StatusApi();
+module.exports = statusApiInstance;
