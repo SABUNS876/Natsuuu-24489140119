@@ -177,13 +177,6 @@
       "name": "AI Tools",
       "items": [
         {
-          "name": "Generate Scraper",
-          "desc": "Create Scraper dengan prompt mu, bertenaga ai",
-          "path": "/ai/cscraper?fitur=",
-          "status": "ready",
-          "requireKey": false
-        },
-        {
           "name": "Generate Plugins Cjs",
           "desc": "Generate plugins Cjs dengan prompt mu, bertenaga ai",
           "path": "/ai/cpluginscjs?fitur=",
