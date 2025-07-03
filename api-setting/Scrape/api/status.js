@@ -9,47 +9,52 @@ class StatusApi {
       uniqueUsers: new Set(),
       responseTimes: [],
       errorCount: 0,
-      firstChecked: new Date()
+      firstChecked: new Date(),
+      monitoringInterval: null
     };
 
-    // Mulai pemantauan otomatis
+    // Auto-start monitoring
     this.startMonitoring();
   }
 
+  /**
+   * Check API status by requesting root URL
+   */
   async checkApiStatus() {
     try {
       const startTime = Date.now();
-      // Cek root URL langsung
       const response = await axios.get('https://api.natsuclouds.biz.id', {
-        timeout: 5000
+        timeout: 5000,
+        validateStatus: () => true // Accept all status codes
       });
+
       const responseTime = Date.now() - startTime;
+      const statusCode = response.status;
 
-      // Tentukan status berdasarkan response
-      let status = 'operational';
-      if (response.status >= 500) {
-        status = 'down';
-      } else if (response.status >= 400) {
-        status = 'degraded';
-      }
+      // Determine status based on response
+      let status;
+      if (statusCode >= 500) status = 'down';
+      else if (statusCode >= 400) status = 'degraded';
+      else status = 'operational';
 
+      // Update stats
       this.stats = {
         ...this.stats,
         lastChecked: new Date(),
-        status: status,
+        status,
         responseTimes: [...this.stats.responseTimes.slice(-99), responseTime]
       };
 
       return {
         success: true,
-        status: this.stats.status,
+        status,
         responseTime,
-        statusCode: response.status
+        statusCode
       };
     } catch (error) {
       this.stats.errorCount++;
       this.stats.status = 'down';
-      
+
       return {
         success: false,
         status: 'down',
@@ -59,10 +64,13 @@ class StatusApi {
     }
   }
 
+  /**
+   * Calculate uptime in days, hours, minutes, seconds
+   */
   calculateUptime() {
     const uptimeMs = new Date() - this.stats.firstChecked;
     const seconds = Math.floor(uptimeMs / 1000);
-    
+
     return {
       days: Math.floor(seconds / 86400),
       hours: Math.floor((seconds % 86400) / 3600),
@@ -72,17 +80,20 @@ class StatusApi {
     };
   }
 
+  /**
+   * Get uptime percentage (0-100%)
+   */
   getUptimePercentage() {
     if (this.stats.totalRequests === 0) return 100;
     return ((this.stats.totalRequests - this.stats.errorCount) / this.stats.totalRequests) * 100;
   }
 
+  /**
+   * Get API stats (main method)
+   */
   async getStats(userId = null) {
     this.stats.totalRequests++;
-    
-    if (userId) {
-      this.stats.uniqueUsers.add(userId);
-    }
+    if (userId) this.stats.uniqueUsers.add(userId);
 
     const statusCheck = await this.checkApiStatus();
     const uptime = this.calculateUptime();
@@ -105,30 +116,63 @@ class StatusApi {
     };
   }
 
+  /**
+   * Start automatic monitoring
+   */
   startMonitoring(interval = 60000) {
-    // Jalankan pemeriksaan pertama
-    this.checkApiStatus();
-    
-    // Set interval untuk pemantauan berkala
-    this.monitoringInterval = setInterval(() => {
+    if (this.stats.monitoringInterval) {
+      clearInterval(this.stats.monitoringInterval);
+    }
+
+    this.checkApiStatus(); // Initial check
+    this.stats.monitoringInterval = setInterval(() => {
       this.checkApiStatus();
     }, interval);
   }
 
+  /**
+   * Stop monitoring
+   */
   stopMonitoring() {
-    if (this.monitoringInterval) {
-      clearInterval(this.monitoringInterval);
+    if (this.stats.monitoringInterval) {
+      clearInterval(this.stats.monitoringInterval);
+      this.stats.monitoringInterval = null;
     }
   }
 
-  // Middleware untuk tracking request
+  /**
+   * Express/Vercel middleware for request tracking
+   */
   trackRequest(req, res, next) {
     const userId = req.headers['x-user-id'] || req.ip;
     req.userId = userId;
     next();
   }
+
+  /**
+   * HTTP handler function (for Vercel/Express)
+   */
+  async httpHandler(req, res) {
+    try {
+      this.trackRequest(req, res, async () => {
+        const stats = await this.getStats(req.userId);
+        res.json(stats);
+      });
+    } catch (error) {
+      res.status(500).json({
+        status: false,
+        message: "Failed to fetch API stats",
+        error: error.message
+      });
+    }
+  }
 }
 
-// Buat instance tunggal dan export
-const statusApiInstance = new StatusApi();
-module.exports = statusApiInstance;
+// ========== Module Exports ========== //
+const statusApi = new StatusApi();
+
+// Main export (supports both direct usage and handler)
+module.exports = statusApi;
+
+// Explicit handler for Vercel/Express
+module.exports.handler = statusApi.httpHandler.bind(statusApi);
