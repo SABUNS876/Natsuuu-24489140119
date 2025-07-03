@@ -177,6 +177,13 @@
       "name": "AI Tools",
       "items": [
         {
+          "name": "Generate Plugins Cjs",
+          "desc": "Generate plugins Cjs dengan prompt mu, bertenaga ai",
+          "path": "/ai/cpluginscjs?fitur=",
+          "status": "ready",
+          "requireKey": false
+        },
+        {
           "name": "Generate Plugins Esm",
           "desc": "Generate plugins esm dengan prompt mu, bertenaga ai",
           "path": "/ai/cplugins?fitur=",
