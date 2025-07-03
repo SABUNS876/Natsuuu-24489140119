@@ -177,6 +177,13 @@
       "name": "AI Tools",
       "items": [
         {
+          "name": "Generate Plugins Esm",
+          "desc": "Generate plugins esm dengan prompt mu, bertenaga ai",
+          "path": "/ai/cplugins?fitur=",
+          "status": "ready",
+          "requireKey": false
+        },
+        {
           "name": "Text To Video GPT",
           "desc": "Ubah Text mu ke video menggunakan ai gpt",
           "path": "/ai/txt2video?prompt=",
