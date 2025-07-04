@@ -179,7 +179,7 @@
         {
           "name": "Generate Scraper",
           "desc": "Fitur ini hanya untuk testing saja jadi jangan di coba dahulu",
-          "path": "/ai/cscraper?fitur=&apikey=&nanti aja, ga mood=",
+          "path": "/ai/cscraper?fitur=&apikey=&nanti aja, ga mood=&apa coba gatau mau rilis or kaga=&eakk=&cie=ngepain jir=&aowkakwoakw=",
           "status": "ready",
           "requireKey": false
         },
