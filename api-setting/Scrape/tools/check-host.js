@@ -1,5 +1,3 @@
-🛠️ *Generated Code:*
-
 const axios = require('axios');
 
  const dns = require('dns').promises;
