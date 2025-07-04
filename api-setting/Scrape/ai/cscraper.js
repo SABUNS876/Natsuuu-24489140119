@@ -32,6 +32,7 @@ async function buatScraperAI(fitur, options = {}) {
 1. LIBRARY YANG TERSEDIA:
    - cheerio: Untuk parsing HTML/XML
    - axios: Untuk HTTP requests
+   - node-fetch: Alternatif untuk HTTP requests
    - puppeteer: Untuk website yang butuh JavaScript rendering
    - fs: Untuk menyimpan hasil ke file
    - url: Untuk validasi URL
@@ -207,7 +208,7 @@ function saveToFile(data, filename) {
       kode: kodeScraper,
       fitur: fitur,
       metadata: {
-        libraries: ['cheerio', 'axios', usePuppeteer ? 'puppeteer' : null].filter(Boolean),
+        libraries: ['cheerio', 'axios', 'node-fetch', usePuppeteer ? 'puppeteer' : null].filter(Boolean),
         warnings: [
           'Pastikan untuk:',
           '1. Ganti semua placeholder dengan nilai sebenarnya',
