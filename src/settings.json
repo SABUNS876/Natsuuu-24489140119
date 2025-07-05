@@ -275,13 +275,6 @@
           "requireKey": false
         },
         {
-          "name": "AI-Images",
-          "desc": "Buat Prompt Mu Menjadi Gambar",
-          "path": "/ai/aiimg?prompt=",
-          "status": "ready",
-          "requireKey": false
-        },
-        {
           "name": "LuminAI",
           "desc": "Chat dengan LuminAI",
           "path": "/ai/ai-lumin?text=",
