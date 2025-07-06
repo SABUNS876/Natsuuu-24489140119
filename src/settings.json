@@ -177,13 +177,6 @@
       "name": "AI Tools",
       "items": [
         {
-          "name": "AI - Images",
-          "desc": "Buat gambar mu menggunakan ai image",
-          "path": "/ai/aiimg?prompt=",
-          "status": "ready",
-          "requireKey": false
-        },
-        {
           "name": "Generate Scraper",
           "desc": "Fitur ini hanya untuk testing saja jadi jangan di coba dahulu",
           "path": "/ai/cscraper?fitur=",
