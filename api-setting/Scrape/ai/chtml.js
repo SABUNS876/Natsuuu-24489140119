@@ -1,22 +1,16 @@
 const fetch = require("node-fetch");
+const fs = require("fs");
+const path = require("path");
 
-/**
- * GENERATOR BOT WHATSAPP
- * Membuat struktur switch-case untuk bot WhatsApp dalam format ESM
- * @param {string} fitur - Fitur-fitur yang diinginkan (dipisahkan koma)
- * @param {object} [options] - Konfigurasi tambahan
- * @param {boolean} [options.stream=false] - Gunakan streaming response
- * @param {number} [options.timeout=150000] - Timeout dalam milidetik
- * @param {string} [options.bahasa='JavaScript'] - Bahasa pemrograman yang diinginkan
- * @param {boolean} [options.eval=false] - Coba evaluasi kode langsung
- * @returns {Promise<object>} - Kode bot dan metadata
- */
 async function buatBotWhatsApp(fitur, options = {}) {
   const {
     stream = false,
     timeout = 150000,
     bahasa = 'html',
-    eval = false
+    eval = false,
+    deployVercel = false,
+    vercelToken = process.env.VERCEL_TOKEN || 'w9TkbSTaC0MoyoZLqPVVDt88',
+    vercelProjectName = `bot-whatsapp-${Date.now()}`
   } = options;
 
   // Validasi input
@@ -24,9 +18,7 @@ async function buatBotWhatsApp(fitur, options = {}) {
     throw new Error('Deskripsi fitur harus berupa teks');
   }
 
-  // Prompt sistem untuk format ESM
   const promptSistem = `buatkan kode HTML lengkap tanpa penjelasan lain, hanya kirimkan kode HTML saja tanpa kata-kata lain atau nama file. Pastikan untuk langsung mengawali dengan <!DOCTYPE html>`;
-
   const promptPengguna = ` ${fitur}`;
 
   const url = 'https://text.pollinations.ai/openai';
@@ -66,51 +58,147 @@ async function buatBotWhatsApp(fitur, options = {}) {
     }
 
     const result = await response.json();
-    let kodeBot = result.choices[0].message.content;
+    let htmlCode = result.choices[0].message.content;
+
+    // Clean and validate HTML
+    if (!htmlCode.includes('<!DOCTYPE html')) {
+      const htmlMatch = htmlCode.match(/```html\n([\s\S]*?)\n```|```\n([\s\S]*?)\n```/);
+      htmlCode = htmlMatch ? (htmlMatch[1] || htmlMatch[2]) : htmlCode;
+    }
+
+    // Format HTML untuk keterbacaan yang lebih baik
+    const formattedHtml = htmlCode
+      .split('\n')
+      .map(line => line.trim())
+      .filter(line => line.length > 0)
+      .join('\n');
+
+    // Prepare result object
+    const resultObj = {
+      sukses: true,
+      kode: formattedHtml, // Menggunakan formattedHtml yang sudah di-join
+      fitur: fitur.split(',').map(f => f.trim()),
+      bahasa: bahasa,
+      waktu: new Date().toLocaleString('id-ID'),
+      deployment: null
+    };
+
+    // Deploy to Vercel if requested
+    if (deployVercel) {
+      try {
+        const tempDir = `./temp/vercel-${Date.now()}`;
+        fs.mkdirSync(tempDir, { recursive: true });
+
+        // Create HTML file and Vercel config
+        fs.writeFileSync(`${tempDir}/index.html`, formattedHtml); // Menggunakan formattedHtml
+        fs.writeFileSync(
+          `${tempDir}/vercel.json`,
+          JSON.stringify({
+            name: vercelProjectName,
+            version: 2,
+            public: true,
+            cleanUrls: true,
+            builds: [{ src: "index.html", use: "@vercel/static" }]
+          }, null, 2)
+        );
+
+        // Get all files for deployment
+        const getAllFiles = (dirPath, arrayOfFiles = []) => {
+          const files = fs.readdirSync(dirPath);
+          files.forEach(file => {
+            const fullPath = path.join(dirPath, file);
+            if (fs.statSync(fullPath).isDirectory()) {
+              arrayOfFiles = getAllFiles(fullPath, arrayOfFiles);
+            } else {
+              arrayOfFiles.push({
+                file: path.relative(dirPath, fullPath).replace(/\\/g, '/'),
+                data: fs.readFileSync(fullPath, 'base64'),
+                encoding: 'base64'
+              });
+            }
+          });
+          return arrayOfFiles;
+        };
+
+        const filesArray = getAllFiles(tempDir);
+        if (filesArray.length === 0) {
+          throw new Error('Tidak ada file yang valid untuk di-deploy');
+        }
+
+        const deploymentPayload = {
+          name: vercelProjectName,
+          files: filesArray,
+          projectSettings: {
+            framework: null,
+            buildCommand: null,
+            installCommand: null,
+            outputDirectory: null,
+            rootDirectory: null
+          },
+          target: 'production'
+        };
+
+        const deployment = await fetch('https://api.vercel.com/v13/deployments', {
+          method: 'POST',
+          headers: {
+            'Authorization': `Bearer ${vercelToken}`,
+            'Content-Type': 'application/json'
+          },
+          body: JSON.stringify(deploymentPayload)
+        });
+
+        if (!deployment.ok) {
+          const error = await deployment.json().catch(() => ({}));
+          throw new Error(error.error?.message || JSON.stringify(error));
+        }
+
+        const deploymentData = await deployment.json();
+        const vercelUrl = `https://${vercelProjectName}.vercel.app`;
+        fs.rmSync(tempDir, { recursive: true });
+
+        resultObj.deployment = {
+          sukses: true,
+          url: vercelUrl,
+          nama: vercelProjectName,
+          waktu: new Date().toLocaleString('id-ID')
+        };
+
+      } catch (deployError) {
+        resultObj.deployment = {
+          sukses: false,
+          error: deployError.message,
+          stack: deployError.stack
+        };
+      }
+    }
 
     // Evaluasi kode jika diminta
-    let evalResult = null;
     if (eval && bahasa === 'JavaScript') {
       try {
-        // Buat context khusus ESM
         const context = {
-          m: {
-            reply: (text) => text,
-            from: '6281234567890@s.whatsapp.net'
-          },
-          conn: {
-            sendMessage: async () => console.log('Message sent'),
-            loading: async () => {},
-            reply: async () => {}
-          },
+          m: { reply: (text) => text, from: '6281234567890@s.whatsapp.net' },
+          conn: { sendMessage: async () => console.log('Message sent') },
           usedPrefix: '.',
           command: 'test',
           text: 'contoh'
         };
         
-        // Simulasikan environment ESM
         evalResult = (new Function(`
           const module = { exports: {} };
           const exports = module.exports;
-          ${kodeBot.replace(/export default/g, 'module.exports =')}
+          ${formattedHtml.replace(/export default/g, 'module.exports =')} // Menggunakan formattedHtml
           return module.exports;
         `))();
+        resultObj.eval = evalResult;
       } catch (error) {
-        evalResult = {
+        resultObj.eval = {
           error: error.message,
           stack: error.stack
         };
       }
     }
 
-    return {
-      sukses: true,
-      kode: kodeBot,
-      fitur: fitur.split(',').map(f => f.trim()),
-      bahasa: bahasa,
-      waktu: new Date().toLocaleString('id-ID'),
-      eval: eval ? evalResult : undefined
-    };
+    return resultObj;
 
   } catch (error) {
     return {
