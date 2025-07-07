@@ -76,98 +76,80 @@ async function buatBotWhatsApp(fitur, options = {}) {
     // Prepare result object
     const resultObj = {
       sukses: true,
-      kode: formattedHtml, // Menggunakan formattedHtml yang sudah di-join
+      kode: formattedHtml,
       fitur: fitur.split(',').map(f => f.trim()),
       bahasa: bahasa,
       waktu: new Date().toLocaleString('id-ID'),
       deployment: null
     };
 
-    // Deploy to Vercel if requested
+    // Deploy to Vercel if requested - PERBAIKAN DEPLOY
     if (deployVercel) {
       try {
-        const tempDir = `./temp/vercel-${Date.now()}`;
-        fs.mkdirSync(tempDir, { recursive: true });
+        const tempDir = path.join(__dirname, 'temp-vercel-deploy');
+        if (!fs.existsSync(tempDir)) {
+          fs.mkdirSync(tempDir, { recursive: true });
+        }
 
-        // Create HTML file and Vercel config
-        fs.writeFileSync(`${tempDir}/index.html`, formattedHtml); // Menggunakan formattedHtml
+        // Create files
+        fs.writeFileSync(path.join(tempDir, 'index.html'), formattedHtml);
         fs.writeFileSync(
-          `${tempDir}/vercel.json`,
+          path.join(tempDir, 'vercel.json'),
           JSON.stringify({
-            name: vercelProjectName,
             version: 2,
-            public: true,
-            cleanUrls: true,
-            builds: [{ src: "index.html", use: "@vercel/static" }]
+            builds: [{ src: "index.html", use: "@vercel/static" }],
+            routes: [{ handle: "filesystem" }, { src: ".*", dest: "index.html" }]
           }, null, 2)
         );
 
-        // Get all files for deployment
-        const getAllFiles = (dirPath, arrayOfFiles = []) => {
-          const files = fs.readdirSync(dirPath);
-          files.forEach(file => {
-            const fullPath = path.join(dirPath, file);
-            if (fs.statSync(fullPath).isDirectory()) {
-              arrayOfFiles = getAllFiles(fullPath, arrayOfFiles);
-            } else {
-              arrayOfFiles.push({
-                file: path.relative(dirPath, fullPath).replace(/\\/g, '/'),
-                data: fs.readFileSync(fullPath, 'base64'),
-                encoding: 'base64'
-              });
-            }
-          });
-          return arrayOfFiles;
-        };
+        // Prepare files for deployment
+        const files = fs.readdirSync(tempDir).map(file => ({
+          file: file,
+          data: fs.readFileSync(path.join(tempDir, file), 'base64'),
+          encoding: 'base64'
+        }));
 
-        const filesArray = getAllFiles(tempDir);
-        if (filesArray.length === 0) {
-          throw new Error('Tidak ada file yang valid untuk di-deploy');
-        }
-
-        const deploymentPayload = {
-          name: vercelProjectName,
-          files: filesArray,
-          projectSettings: {
-            framework: null,
-            buildCommand: null,
-            installCommand: null,
-            outputDirectory: null,
-            rootDirectory: null
-          },
-          target: 'production'
-        };
-
-        const deployment = await fetch('https://api.vercel.com/v13/deployments', {
+        const deploymentResponse = await fetch('https://api.vercel.com/v13/deployments', {
           method: 'POST',
           headers: {
             'Authorization': `Bearer ${vercelToken}`,
             'Content-Type': 'application/json'
           },
-          body: JSON.stringify(deploymentPayload)
+          body: JSON.stringify({
+            name: vercelProjectName,
+            files: files,
+            projectSettings: {
+              framework: null,
+              buildCommand: null,
+              outputDirectory: null
+            }
+          })
         });
 
-        if (!deployment.ok) {
-          const error = await deployment.json().catch(() => ({}));
-          throw new Error(error.error?.message || JSON.stringify(error));
+        if (!deploymentResponse.ok) {
+          throw new Error(`Deployment gagal: ${await deploymentResponse.text()}`);
         }
 
-        const deploymentData = await deployment.json();
-        const vercelUrl = `https://${vercelProjectName}.vercel.app`;
-        fs.rmSync(tempDir, { recursive: true });
+        const deploymentData = await deploymentResponse.json();
+        const deploymentUrl = `https://${vercelProjectName}.vercel.app`;
+
+        // Clean up
+        fs.rmSync(tempDir, { recursive: true, force: true });
 
         resultObj.deployment = {
           sukses: true,
-          url: vercelUrl,
+          url: deploymentUrl,
           nama: vercelProjectName,
-          waktu: new Date().toLocaleString('id-ID')
+          waktu: new Date().toLocaleString('id-ID'),
+          details: deploymentData
         };
 
       } catch (deployError) {
         resultObj.deployment = {
           sukses: false,
           error: deployError.message,
-          stack: deployError.stack
+          stack: deployError.stack,
+          waktu: new Date().toLocaleString('id-ID')
         };
       }
     }
@@ -183,10 +165,10 @@ async function buatBotWhatsApp(fitur, options = {}) {
           text: 'contoh'
         };
         
-        evalResult = (new Function(`
+        const evalResult = (new Function(`
           const module = { exports: {} };
           const exports = module.exports;
-          ${formattedHtml.replace(/export default/g, 'module.exports =')} // Menggunakan formattedHtml
+          ${formattedHtml.replace(/export default/g, 'module.exports =')}
           return module.exports;
         `))();
         resultObj.eval = evalResult;
