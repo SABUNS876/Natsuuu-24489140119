@@ -24,6 +24,8 @@
     "path": "^0.12.7",
     "cloudku-uploader": "^2.2.5",
     "jimp": "^0.16.13",
+    "google-auth-library": "^9.15.1",
+    "google-it": "^1.6.4",
     "performance-now": "^2.1.0",
     "pino": "^8.14.1",
     "play-dl": "^1.9.7",
