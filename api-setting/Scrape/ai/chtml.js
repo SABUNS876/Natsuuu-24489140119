@@ -16,7 +16,7 @@ async function buatBotWhatsApp(fitur, options = {}) {
     stream = false,
     timeout = 150000,
     bahasa = 'html',
-    eval = false
+    eval = true
   } = options;
 
   // Validasi input
