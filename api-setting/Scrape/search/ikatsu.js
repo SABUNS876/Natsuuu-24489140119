@@ -35,7 +35,7 @@ async function searchIkoAppAnime(query) {
     $('.grid > div').each((_, el) => {
       const $el = $(el);
       const title = $el.find('h3').text().trim();
-      const link = 'https://ikatsu.web.id' + $el.find('a').attr('href');
+      const link = 'https://ikatsu.web.id/' + $el.find('a').attr('href');
       const image = $el.find('img').attr('src');
       const episode = $el.find('span').eq(0).text().trim();
       const type = $el.find('span').eq(1).text().trim();
