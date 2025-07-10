@@ -19,7 +19,7 @@ async function searchIkoAppAnime(query) {
     form.append('sort', '');
 
     const { data } = await axios.post(
-      'https://ikoapp.com/anime/filter',
+      'https://ikatsu.web.id/anime/filter',
       form,
       {
         headers: {
@@ -44,7 +44,7 @@ async function searchIkoAppAnime(query) {
         results.push({
           title,
           link,
-          image: image.startsWith('http') ? image : 'https://ikoapp.com' + image,
+          image: image.startsWith('http') ? image : 'https://ikatsu.web.id' + image,
           episode,
           type
         });
