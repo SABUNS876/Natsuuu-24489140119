@@ -39,21 +39,21 @@
         {
           "name": "Google Search",
           "desc": "Search web menggunakan google",
-          "path": "/search/google?q=&limit=",
+          "path": "/search/google?maintenance=",
           "status": "ready",
           "requireKey": false
         },
           {
           "name": "Ikatsu Search",
           "desc": "Search Anime Menggunakan Ikatsu",
-          "path": "/search/ikatsu?q=",
+          "path": "/search/ikatsu?error=",
           "status": "ready",
           "requireKey": false
         },
           {
           "name": "Search Anime",
           "desc": "Temukan Anime Yang Kamu Suka",
-          "path": "/search/anime?q=",
+          "path": "/search/anime?maintenance=",
           "status": "ready",
           "requireKey": false
         },
@@ -142,7 +142,7 @@
         {
           "name": "Youtube Audio Downloader",
           "desc": "Download Audio Youtube",
-          "path": "/downloader/yta?url=",
+          "path": "/downloader/yta?maintenance=",
           "status": "ready",
           "requireKey": false,
           "params": {
@@ -369,7 +369,7 @@
         {
           "name": "Weather",
           "desc": "Cek Cuaca Sekitar",
-          "path": "/tools/weather?city=",
+          "path": "/tools/weather?maintenance=",
           "status": "ready",
           "requireKey": false
         },
@@ -431,7 +431,7 @@
         {
           "name": "Status Api",
           "desc": "Cek Status Api",
-          "path": "/api/status",
+          "path": "/api/status?maintenance",
           "status": "ready",
           "requireKey": false
           }
