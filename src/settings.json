@@ -360,9 +360,9 @@
       "name": "Tools",
       "items": [
         {
-          "name": "Upscaler",
-          "desc": "Tingkatkan Grafik fotomu menggunakan upscale",
-          "path": "/tools/upscale?url=",
+          "name": "Jadwal Sholat",
+          "desc": "Cek Jadwal Sholat Di Seluruh Daerah Indonesia",
+          "path": "/tools/jadwalsholat?kota=",
           "status": "ready",
           "requireKey": false
         },
