@@ -2,7 +2,7 @@ const axios = require('axios');
 const cheerio = require('cheerio');
 
 const jadwalsholat = {
-    async handler(namaKota) {
+    async function jadwalsholat(namaKota) {
         try {
             // Dapatkan list kota terlebih dahulu
             const listKota = await axios.get('https://pastebin.com/raw/D2q7v8F2');
