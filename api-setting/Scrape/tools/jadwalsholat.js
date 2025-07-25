@@ -2,41 +2,54 @@ const axios = require('axios');
 const cheerio = require('cheerio');
 
 const jadwalsholat = {
-    async listKota() {
-        const { data } = await axios.get('https://pastebin.com/raw/D2q7v8F2');
-        return data;
+    async handler(namaKota) {
+        try {
+            // Dapatkan list kota terlebih dahulu
+            const listKota = await axios.get('https://pastebin.com/raw/D2q7v8F2');
+            const kotaData = listKota.data.find(k => k.kota.toLowerCase() === namaKota.toLowerCase());
+            
+            if (!kotaData) {
+                throw new Error(`Kota "${namaKota}" tidak ditemukan`);
+            }
+
+            // Ambil jadwal sholat
+            const response = await axios.get(`https://jadwalsholat.org/jadwal-sholat/monthly.php?id=${kotaData.id}`, {
+                headers: { 'User-Agent': 'Mozilla/5.0' }
+            });
+
+            const $ = cheerio.load(response.data);
+            const periode = $('h2.h2_edit').first().text().trim();
+
+            const headers = [];
+            $('tr.table_header td').each((i, el) => {
+                headers.push($(el).text().trim());
+            });
+
+            const jadwal = {};
+            $('tr.table_highlight td').each((i, el) => {
+                jadwal[headers[i]] = $(el).text().trim();
+            });
+
+            return {
+                success: true,
+                kota: kotaData.kota,
+                id: kotaData.id,
+                periode,
+                jadwal
+            };
+        } catch (error) {
+            return {
+                success: false,
+                message: error.message
+            };
+        }
     },
 
-    async getJadwal(namaKota) {
-        const kotaList = await this.listKota();
-        const kota = kotaList.find(k => k.kota.toLowerCase() === namaKota.toLowerCase());
-        
-        if (!kota) throw new Error(`Kota "${namaKota}" tidak ditemukan!`);
-
-        const { data } = await axios.get(`https://jadwalsholat.org/jadwal-sholat/monthly.php?id=${kota.id}`, {
-            headers: { 'User-Agent': 'Mozilla/5.0' }
-        });
-
-        const $ = cheerio.load(data);
-        const periode = $('h2.h2_edit').text().trim();
-        
-        const headers = [];
-        $('tr.table_header td').each((i, el) => {
-            headers.push($(el).text().trim());
-        });
-
-        const jadwal = {};
-        $('tr.table_highlight td').each((i, el) => {
-            jadwal[headers[i]] = $(el).text().trim();
-        });
-
-        return {
-            kota: kota.kota,
-            id: kota.id,
-            periode,
-            jadwal
-        };
+    // Fungsi tambahan jika diperlukan
+    async listKota() {
+        const response = await axios.get('https://pastebin.com/raw/D2q7v8F2');
+        return response.data;
     }
 };
 
-module.exports = jadwalsholat; // Ekspor langsung object-nya
+module.exports = jadwalsholat;
