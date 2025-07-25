@@ -360,13 +360,6 @@
       "name": "Tools",
       "items": [
         {
-          "name": "Jadwal Sholat",
-          "desc": "Cek Jadwal Sholat Di Seluruh Daerah Indonesia",
-          "path": "/tools/jadwalsholat?kota=",
-          "status": "ready",
-          "requireKey": false
-        },
-        {
           "name": "Weather",
           "desc": "Cek Cuaca Sekitar",
           "path": "/tools/weather?maintenance=",
