@@ -107,6 +107,13 @@
       "name": "Downloader",
       "items": [
         {
+          "name": "Bstation Downloader",
+          "desc": "Download Bstation",
+          "path": "/downloader/bstation?url=",
+          "status": "ready",
+          "requireKey": false,
+        },
+          {
           "name": "Twitter",
           "desc": "Download Twitter",
           "path": "/downloader/twitterdl?url=",
