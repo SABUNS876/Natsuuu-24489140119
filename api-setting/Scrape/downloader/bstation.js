@@ -1,63 +1,61 @@
 const axios = require('axios');
-const fs = require('fs');
+const FormData = require('form-data');
 
-async function BiliBiliDownloader(url) {
-    try {
-        // Validasi URL
-        if (!url || !url.includes('bilibili')) {
-            throw new Error('URL Bilibili tidak valid');
-        }
-
-        const headers = {
-            'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/91.0.4472.124 Safari/537.36'
-        };
-
-        // Langsung dapatkan URL download
-        const apiUrl = `https://api.bilibili.com/x/web-interface/view?bvid=${url.split('/').pop()}`;
-        const response = await axios.get(apiUrl, { headers });
-        
-        if (!response.data.data) {
-            throw new Error('Video tidak ditemukan');
-        }
-
-        const videoData = response.data.data;
-        const downloadUrl = videoData.durl?.[0]?.url;
-
-        if (!downloadUrl) {
-            throw new Error('Tidak dapat mendapatkan URL download');
-        }
-
-        // Download video
-        const videoResponse = await axios.get(downloadUrl, { 
-            headers,
-            responseType: 'stream' 
-        });
-
-        const fileName = `bilibili_${Date.now()}.mp4`;
-        const writer = fs.createWriteStream(fileName);
-
-        videoResponse.data.pipe(writer);
-
-        return new Promise((resolve, reject) => {
-            writer.on('finish', () => resolve({
-                status: 'success',
-                filePath: fileName,
-                videoInfo: {
-                    title: videoData.title,
-                    author: videoData.owner.name,
-                    duration: videoData.duration
-                }
-            }));
-            writer.on('error', reject);
-        });
-
-    } catch (error) {
-        console.error('Error:', error.message);
-        return {
-            status: 'error',
-            message: error.message
-        };
+async function BiliBiliToCatbox(bilibiliUrl) {
+  try {
+    // Validasi URL Bilibili
+    if (!bilibiliUrl || typeof bilibiliUrl !== 'string' || !bilibiliUrl.includes('bilibili')) {
+      throw new Error('URL Bilibili tidak valid');
     }
+
+    const headers = {
+      'Accept': 'application/json',
+      'Content-Type': 'application/json',
+      'User-Agent': 'Mozilla/5.0 (Linux; Android 11; M2004J19C Build/RP1A.200720.011) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/138.0.7204.157 Mobile Safari/537.36',
+      'Referer': 'https://www.bilibili.com/'
+    };
+
+    // Langkah 1: Dapatkan URL download dari Bilibili
+    const apiRes = await axios.post(
+      'https://downloadapi.stuff.solutions/api/json',
+      { url: bilibiliUrl },
+      { headers }
+    );
+
+    if (!apiRes.data.url || apiRes.data.status !== 'stream') {
+      throw new Error('Gagal mendapatkan URL stream dari Bilibili');
+    }
+
+    const videoUrl = apiRes.data.url;
+
+    // Langkah 2: Upload langsung ke Catbox
+    const form = new FormData();
+    form.append('reqtype', 'urlupload');
+    form.append('url', videoUrl);
+
+    const uploadRes = await axios.post('https://catbox.moe/user/api.php', form, {
+      headers: form.getHeaders(),
+      timeout: 3000000 // Timeout 30 detik
+    });
+
+    if (!uploadRes.data || typeof uploadRes.data !== 'string') {
+      throw new Error('Gagal mengupload ke Catbox');
+    }
+
+    return {
+      status: 'success',
+      catboxUrl: uploadRes.data,
+      originalUrl: bilibiliUrl,
+      message: 'Video berhasil diupload ke Catbox'
+    };
+
+  } catch (error) {
+    return {
+      status: 'error',
+      message: error.message,
+      details: process.env.NODE_ENV === 'development' ? error.stack : undefined
+    };
+  }
 }
 
-module.exports = BiliBiliDownloader;
+module.exports = BiliBiliToCatbox;
