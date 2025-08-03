@@ -37,6 +37,13 @@
       "name": "Search",
       "items": [
         {
+          "name": "Bstation Search",
+          "desc": "Mencari anime menggunaka bstation",
+          "path": "/search/bstation?q=",
+          "status": "ready",
+          "requireKey": false
+        },
+          {
           "name": "Google Search",
           "desc": "Search web menggunakan google",
           "path": "/search/google?maintenance=",
