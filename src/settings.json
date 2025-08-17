@@ -184,9 +184,9 @@
       "name": "AI Tools",
       "items": [
         {
-          "name": "Generate Scraper",
-          "desc": "Fitur ini hanya untuk testing saja jadi jangan di coba dahulu",
-          "path": "/ai/cscraper?fitur=",
+          "name": "AI - Image",
+          "desc": "Ubah prompt mu menjadi gambar 3D, menggunakan ai",
+          "path": "/ai/aiimg?prompt=",
           "status": "ready",
           "requireKey": false
         },
